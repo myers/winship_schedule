@@ -189,7 +189,7 @@ SCHEDULE = {
 
 
 def tate_annual_weekend_start(year):
-    ret = date(year=year, month=8, day=14)
+    ret = date(year=year, month=8, day=8)
     while ret.weekday() != 5:
         ret = ret + timedelta(days=1)
     return ret
@@ -248,6 +248,7 @@ def print_year_schedule(year):
     print_next_n_weeks(start, 10, 'hot')
     print()
 
+    start = tate_annual_week_start(year)
     print("Tate Annual Week")
     print_next_n_weeks(start, 1)
     print()
