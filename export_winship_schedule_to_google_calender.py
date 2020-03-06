@@ -35,10 +35,6 @@ def delete_all_events(service):
         calendarId=WINSHIP_HOUSE_CALENDER_ID).execute()
     events = events_result.get('items', [])
     for event in events:
-
-        start = event['start'].get('dateTime', event['start'].get('date'))
-        print(start, event['summary'])
-
         kwargs = {
             'calendarId': WINSHIP_HOUSE_CALENDER_ID,
             'eventId': event['id'],
