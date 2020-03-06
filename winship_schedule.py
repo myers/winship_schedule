@@ -3,7 +3,7 @@
 from datetime import date, timedelta
 
 """
-Hot Weeks - 9 weeks before the Tate Annual Weekend, and 1 week after
+Hot Weeks - 8 weeks before the Tate Annual Weekend, and 2 weeks after
 Early Warm Weeks - 5 weeks before start of hot weeks
 Late Warm Weeks - 5 weeks after Tate Annual Weekend
 Early Cool Weeks - 5 weeks before Early Warm weeks
@@ -198,7 +198,7 @@ def tate_annual_week_start(year):
     return tate_annual_weekend_start(year) - timedelta(days=6)
 
 def hot_weeks_start(year):
-    return tate_annual_week_start(year) - timedelta(days=7*9)
+    return tate_annual_week_start(year) - timedelta(days=7*8)
 
 def early_warm_weeks_start(year):
     return hot_weeks_start(year) - timedelta(days=7*5)
@@ -207,7 +207,7 @@ def early_cool_weeks_start(year):
     return early_warm_weeks_start(year) - timedelta(days=7*5)
 
 def late_warm_weeks_start(year):
-    return tate_annual_week_start(year) + timedelta(days=7*2)
+    return tate_annual_week_start(year) + timedelta(days=7*3)
 
 def late_cool_weeks_start(year):
     return late_warm_weeks_start(year) + timedelta(days=7*5)
@@ -257,13 +257,13 @@ def create_schedule(year):
     schedule.append(WeeksChunk("Early Warm Weeks", next_n_weeks(start, 5, 'warm')))
 
     start = hot_weeks_start(year)
-    schedule.append(WeeksChunk("Hot Weeks", next_n_weeks(start, 9, 'hot')))
+    schedule.append(WeeksChunk("Hot Weeks", next_n_weeks(start, 8, 'hot')))
 
     start = tate_annual_week_start(year)
     schedule.append(WeeksChunk("Tate Annual Week", next_n_weeks(start, 1)))
 
     start = tate_annual_week_start(year) + timedelta(days=7)
-    schedule.append(WeeksChunk("Hot Weeks (continued)", next_n_weeks(start, 1, 'hot', 9)))
+    schedule.append(WeeksChunk("Hot Weeks (continued)", next_n_weeks(start, 2, 'hot', 8)))
 
     start = late_warm_weeks_start(year)
     schedule.append(WeeksChunk("Late Warm Weeks", next_n_weeks(start, 5, 'warm', 4)))
