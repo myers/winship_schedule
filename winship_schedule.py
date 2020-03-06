@@ -143,16 +143,16 @@ SCHEDULE = {
             'lane-1',
             'dhal-1',
             'frank_may-1',
-            'frank_latimer-1',
             'will-1',
+            'frank_latimer-1',
             'richard-1',
         ],
         'warm': [
             'dhal-2',
             'hankey-2',
             'prentiss-2',
-            'richard-2',
             'frank_latimer-2',
+            'richard-2',
             'frank_may-2',
             'eddie-2',
             'will-2',
@@ -160,8 +160,8 @@ SCHEDULE = {
             'lane-2',
         ],
         'hot': [
-            'frank_latimer-3',
             'hankey-3',
+            'frank_latimer-3',
             'dhal-3',
             'eddie-3',
             'becca-1',
@@ -306,5 +306,5 @@ def schedule_check():
 if __name__ == "__main__":
     schedule_check()
 
-    for year in range(2020, 2031):
+    for year in range(2020, 2021):
         print_year_schedule(year)
