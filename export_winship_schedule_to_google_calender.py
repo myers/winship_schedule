@@ -16,14 +16,14 @@ def list_calenders():
 
 def create_event_for_week(week, service):
     event = {
-      'summary': week.share.title(),
+      'summary': winship_schedule.share_name_to_name(week.share),
       'location': 'Winship House, 1083 Lake Sequoyah Road, Jasper, GA, 30143',
       'start': {
         'date': week.start.isoformat(),
         'timeZone': 'America/New_York',
       },
       'end': {
-        'date': (week.start + datetime.timedelta(days=7)).isoformat(),
+        'date': week.end.isoformat(),
         'timeZone': 'America/New_York',
       },
     }
@@ -33,8 +33,10 @@ def create_event_for_week(week, service):
 def delete_all_events(service):
     events_result = service.events().list(
         calendarId=WINSHIP_HOUSE_CALENDER_ID).execute()
+    print(events_result)
     events = events_result.get('items', [])
     for event in events:
+        print("deleteing {}".format(event['id']))
         kwargs = {
             'calendarId': WINSHIP_HOUSE_CALENDER_ID,
             'eventId': event['id'],
@@ -48,9 +50,9 @@ def main(year=2020):
 
     delete_all_events(service)
 
-    schedule = winship_schedule.create_schedule(year)
+    house_year = winship_schedule.HouseYear(year)
 
-    for chunk in schedule:
+    for chunk in house_year.chunks():
         for week in chunk.weeks:
             create_event_for_week(week, service)
 
