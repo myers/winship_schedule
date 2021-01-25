@@ -31,25 +31,27 @@ def create_event_for_week(week, service):
     event = service.events().insert(calendarId=WINSHIP_HOUSE_CALENDER_ID, body=event).execute()
 
 def delete_all_events(service):
-    events_result = service.events().list(
-        calendarId=WINSHIP_HOUSE_CALENDER_ID).execute()
-    print(events_result)
-    events = events_result.get('items', [])
-    for event in events:
-        print("deleteing {}".format(event['id']))
-        kwargs = {
-            'calendarId': WINSHIP_HOUSE_CALENDER_ID,
-            'eventId': event['id'],
-            'sendNotifications': False
-        }
-        rq = service.events().delete(**kwargs)
-        resp = rq.execute()
+    page_token = None
+    while True:
+        events_result = service.events().list(calendarId=WINSHIP_HOUSE_CALENDER_ID, pageToken=page_token).execute()
+        for event in events_result.get('items', []):
+            print("deleteing {}".format(event['id']))
+            kwargs = {
+                'calendarId': WINSHIP_HOUSE_CALENDER_ID,
+                'eventId': event['id'],
+                'sendNotifications': False
+            }
+            rq = service.events().delete(**kwargs)
+            resp = rq.execute()
+        page_token = events_result.get('nextPageToken')
+        if not page_token:
+            break
+
 
 def main(year=2020):
     service = google_calender.get_calender_service()
 
     delete_all_events(service)
-
     house_year = winship_schedule.HouseYear(year)
 
     for chunk in house_year.chunks():
