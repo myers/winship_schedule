@@ -1,7 +1,6 @@
 # winship_schedule
 
-
-# Goals
+## Goals
 
 The Winship House only has 40 weeks of the year that we schedule for.  A 5% share ownership should get you 2 weeks of time at the house.
 
@@ -17,8 +16,12 @@ We also want to evenly split the Holidays:
 
 We also want the week and weekend of the Tate Annual Meeting to be open to all.
 
+We should have a Clean up weekend from the Friday of the first week to the Sunday.
+
 We want to have a schedule that we can work with at least five years out.   Those with kids have to plan their summers far out in advance.
-# How I solved this
+
+
+## How I solved this
 
 I wanted to do this on a computer, because if we can get a computer to create this schedule it's easy to generate a list for as many years as we care to.
 We define our seasons and when they happen (Cool Weeks, Warm Weeks, Hot Weeks, and Cold Weeks).  Everything is based around when Tate Annual Weekend happens:

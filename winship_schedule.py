@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
+import sys, pprint
 from datetime import date, timedelta
 
 """
@@ -103,23 +103,23 @@ SCHEDULE = {
             'myers-1',
             'eddie-1',
             'richard-1',
-            'frank_latimer-1',
-            'david_hugh_ann_laurel-1',
-            'becca-1',
             'hankey-1',
+            'frank_latimer-1',
+            'becca-1',
+            'david_hugh_ann_laurel-1',
             'frank_may-1',
             'jim-1',
         ],
         'warm': [
             'david_hugh_ann_laurel-2',
-            'frank_latimer-2',
             'hankey-2',
+            'frank_latimer-2',
             'frank_may-2',
             'jim-2',
             'becca-2',
-            'eddie-2',
             'prentiss-2',
             'myers-2',
+            'eddie-2',
             'richard-2',
         ],
         'hot': [
@@ -135,7 +135,6 @@ SCHEDULE = {
             'richard-3',
         ],
         'cold': [
-            'david_hugh_ann_laurel-4',
             'will-2',
             'eddie-4',
             'frank_may-4',
@@ -145,6 +144,7 @@ SCHEDULE = {
             'hankey-4',
             'prentiss-4',
             'joe-2',
+            'david_hugh_ann_laurel-4',
         ],
     },
     'even': {
@@ -199,9 +199,9 @@ SCHEDULE = {
     }
 }
 
-def memorial_week_start(year):
+def memorial_day_week_start(year):
     """
-    >>> memorial_week_start(2020)
+    >>> memorial_day_week_start(2020)
     datetime.date(2020, 5, 17)
     """
     ret = memorial_day(year) - timedelta(days=8)
@@ -429,7 +429,7 @@ class WarmWeeks(HouseWeeks):
 
         ret = []
 
-        md = memorial_week_start(self.year)
+        md = memorial_day_week_start(self.year)
         week_starts = [x for x in week_starts if x != md]
         assert len(week_starts) == 9
         ret.append(AllocatedWeek(start=md, end=md+timedelta(days=9), share=shares.pop(0), holiday="Memorial Day"))
@@ -493,32 +493,6 @@ class CoolWeeks(HouseWeeks):
             share = SCHEDULE[self.year_type()][self.week_type][offset]
             yield AllocatedWeek(start=start, end=start+timedelta(days=7), share=share)
 
-def print_year_schedule(year):
-    print(year)
-    print()
-    house_year = HouseYear(year)
-    for chunk in house_year.chunks():
-        print(chunk.name)
-        for week in chunk.weeks:
-            name = share_name_to_name(week.share)
-            holiday = ""
-            if week.holiday:
-                holiday = " ({})".format(week.holiday)
-            print("\t{} - {}{}".format(week.start.strftime("%x"), name, holiday))
-        print()
-    print("-"*80)
-
-def print_holiday(year):
-    house_year = HouseYear(year)
-    for chunk in house_year.chunks():
-        for week in chunk.weeks:
-            name = share_name_to_name(week.share)
-            holiday = ""
-            if week.holiday:
-                holiday = " *"
-            if week.start != christmas_week_start(year):
-                continue
-            print("{} - {} - {}{}".format(year, week.start.strftime("%x"), name, holiday))
 
 if __name__ == "__main__":
     import doctest
@@ -526,5 +500,28 @@ if __name__ == "__main__":
     if ret.failed > 0:
         sys.exit(1)
 
-    for year in range(2021, 2025):
-        print_year_schedule(year)
+
+    for year in range(2020, 2051):
+        print(year, cold_weeks_end(year))
+        if memorial_day_week_start(year) >= hot_weeks_start(year):
+            print(f"In {year} memorial_day is in the hot weeks")
+
+    # for year in range(2021, 2025):
+    #     print("-"*20)
+    #     print(year)
+    #     print("-"*20)
+    #     l = [
+    #         (early_cool_weeks_start(year), "Early Cool Weeks Start",),
+    #         (memorial_day_week_start(year), "Memorial Day Week Start",),
+    #         (labor_day_week_start(year), "Labor Day Week Start",),
+    #         (independence_day_week_start(year), "Independence Day Week Start",),
+    #         (tate_annual_week_start(year), "Tate Annual Meeting Week Start",),
+    #         (early_warm_weeks_start(year), "Early Warm Weeks Start",),
+    #         (hot_weeks_start(year), "Hot Weeks Start",),
+    #         (late_warm_weeks_start(year), "Late Warm Weeks Start",),
+    #         (late_cool_weeks_start(year), "Late Cool Weeks Start",),
+    #         (cold_weeks_start(year), "Cold Weeks Start",),
+    #     ]
+    #     l.sort()
+
+    #     pprint.pprint(l)
