@@ -100,8 +100,8 @@ SCHEDULE = {
     'odd' : {
         'cool': [
             'prentiss-1',
-            'myers-1',
             'eddie-1',
+            'myers-1',
             'richard-1',
             'hankey-1',
             'frank_latimer-1',
@@ -281,7 +281,9 @@ def christmas(year):
 
 def tate_annual_meeting(year):
     """
-    first Saturday in aug
+    first Saturday in Aug (see `By-laws- current (2017).pdf`)
+    >>> tate_annual_meeting(2021)
+    datetime.date(2021, 8, 7)
     """
     ret = date(year=year, month=8, day=1)
     while ret.weekday() != 5:
@@ -289,10 +291,14 @@ def tate_annual_meeting(year):
     return ret
 
 def tate_annual_week_start(year):
+    """
+    >>> tate_annual_week_start(2021)
+    datetime.date(2021, 8, 1)
+    """
     return tate_annual_meeting(year) - timedelta(days=6)
 
 def hot_weeks_start(year):
-    return tate_annual_week_start(year) - timedelta(days=7*8)
+    return tate_annual_week_start(year) - timedelta(days=7*hot_weeks_before_tate_annual_week_start(year))
 
 def early_warm_weeks_start(year):
     return hot_weeks_start(year) - timedelta(days=7*5)
@@ -306,7 +312,7 @@ def early_cool_weeks_start(year):
     return ret
 
 def late_warm_weeks_start(year):
-    return tate_annual_week_start(year) + timedelta(days=7*3)
+    return tate_annual_week_start(year) + timedelta(days=7*(10 - hot_weeks_before_tate_annual_week_start(year) + 1))
 
 def late_cool_weeks_start(year):
     return late_warm_weeks_start(year) + timedelta(days=7*5)
@@ -316,6 +322,27 @@ def cold_weeks_start(year):
 
 def share_name_to_name(share):
     return share.split("-")[0].replace("_", " ").title()
+
+def cleanup_weekend_start(year):
+    return early_cool_weeks_start(year) - timedelta(days=2)
+
+def hot_weeks_before_tate_annual_week_start(year):
+    # TODO: what's special about 2021?  Can I find other years like this?
+    if year == 2021:
+        return 9
+    return 8
+
+def sunday_after(dd):
+    """
+    >>> sunday_after(date(2021,4,25))
+    datetime.date(2021, 5, 2)
+    """
+    while True:
+        dd += timedelta(days=1)
+        if dd.weekday() == 6:
+            break
+    return dd
+
 
 class Week:
     def __init__(self, start, share):
@@ -331,6 +358,22 @@ from collections import namedtuple, deque
 
 AllocatedWeek = namedtuple('AllocatedWeek', ('start', 'end', 'share', 'holiday'), defaults=(None,))
 
+def check_house_year(year):
+    """
+    check all the time is claimed  (weed_end = next_week_start + 1 day)
+    """
+    hy = HouseYear(2021)
+    last_week = None
+    for chunk in hy.chunks():
+        print(chunk.name)
+        for week in chunk.weeks:
+            print(f"\t{week!r}")
+            if last_week is None:
+                last_week = week
+            else:
+                assert last_week.end == week.start, f"{last_week.end!r} should equal {week.start!r}"
+                last_week = week
+
 class HouseYear:
     def __init__(self, year):
         self.year = year
@@ -340,13 +383,15 @@ class HouseYear:
         self.cold_weeks = ColdWeeks(year)
 
     def chunks(self):
+        cleanup = AllocatedWeek(start=cleanup_weekend_start(self.year), end=sunday_after(cleanup_weekend_start(self.year)), share="Everyone!")
+        yield WeeksChunk("Cleanup Weekend", [cleanup])
         yield WeeksChunk("Early Cool Weeks", list(self.cool_weeks.weeks())[:5])
         yield WeeksChunk("Early Warm Weeks", list(self.warm_weeks.weeks())[:5])
 
-        yield WeeksChunk("Hot Weeks", list(self.hot_weeks.weeks())[:8])
+        yield WeeksChunk("Hot Weeks", list(self.hot_weeks.weeks())[:hot_weeks_before_tate_annual_week_start(self.year)])
         tam = AllocatedWeek(start=tate_annual_week_start(self.year), end=tate_annual_week_start(self.year)+timedelta(days=7), share="Party!")
         yield WeeksChunk("Tate Annual Week", [tam])
-        yield WeeksChunk("Hot Weeks (continued)", list(self.hot_weeks.weeks())[8:])
+        yield WeeksChunk("Hot Weeks (continued)", list(self.hot_weeks.weeks())[hot_weeks_before_tate_annual_week_start(self.year):])
         yield WeeksChunk("Late Warm Weeks", list(self.warm_weeks.weeks())[5:])
         yield WeeksChunk("Late Cool Weeks", list(self.cool_weeks.weeks())[5:])
         yield WeeksChunk("Cold Weeks", list(self.cold_weeks.weeks()))
@@ -399,15 +444,15 @@ class ColdWeeks(HouseWeeks):
         thxgiving = thanksgiving_week_start(self.year)
         week_starts = [x for x in week_starts if x != thxgiving]
         assert len(week_starts) == 9
-        ret.append(AllocatedWeek(start=thxgiving, end=thxgiving+timedelta(days=6), share=shares.pop(0), holiday="Thanksgiving"))
+        ret.append(AllocatedWeek(start=thxgiving, end=sunday_after(thxgiving), share=shares.pop(0), holiday="Thanksgiving"))
 
         xmas = christmas_week_start(self.year)
         week_starts = [x for x in week_starts if x != xmas]
         assert len(week_starts) == 8
-        ret.append(AllocatedWeek(start=xmas, end=xmas+timedelta(days=6), share=shares.pop(0), holiday="Christmas"))
+        ret.append(AllocatedWeek(start=xmas, end=sunday_after(xmas), share=shares.pop(0), holiday="Christmas"))
 
         for start in week_starts:
-            ret.append(AllocatedWeek(start=start, end=start+timedelta(days=6), share=shares.pop(0)))
+            ret.append(AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0)))
 
         ret.sort(key=lambda x: x.start)
         return ret
@@ -440,10 +485,11 @@ class WarmWeeks(HouseWeeks):
         ret.append(AllocatedWeek(start=ld, end=ld+timedelta(days=9), share=shares.pop(0), holiday="Labor Day"))
 
         for start in week_starts:
-            if start == md + timedelta(days=7) or start == ld + timedelta(days=7):
-                ret.append(AllocatedWeek(start=start+timedelta(days=2), end=start+timedelta(days=7), share=shares.pop(0)))
-            else:
-                ret.append(AllocatedWeek(start=start, end=start+timedelta(days=7), share=shares.pop(0)))
+            if start == md + timedelta(days=7):
+                start = start + timedelta(days=2)
+            if start == ld + timedelta(days=7):
+                start = start + timedelta(days=2)
+            ret.append(AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0)))
 
         ret.sort(key=lambda x: x.start)
         return ret
@@ -455,8 +501,8 @@ class HotWeeks(HouseWeeks):
 
     def week_starts(self):
         ret = []
-        ret.extend(self.add_n_weeks(hot_weeks_start(self.year), 8))
-        ret.extend(self.add_n_weeks(tate_annual_week_start(self.year) + timedelta(days=7), 2))
+        ret.extend(self.add_n_weeks(hot_weeks_start(self.year), hot_weeks_before_tate_annual_week_start(self.year)))
+        ret.extend(self.add_n_weeks(tate_annual_week_start(self.year) + timedelta(days=7), 10 - hot_weeks_before_tate_annual_week_start(self.year)))
         return ret
 
     def weeks(self):
@@ -468,10 +514,12 @@ class HotWeeks(HouseWeeks):
         ind = independence_day_week_start(self.year)
         week_starts = [x for x in week_starts if x != ind]
         assert len(week_starts) == 9
-        ret.append(AllocatedWeek(start=ind, end=ind+timedelta(days=7), share=shares.pop(0), holiday="Independence Day"))
+        ret.append(AllocatedWeek(start=ind, end=sunday_after(ind), share=shares.pop(0), holiday="Independence Day"))
 
         for start in week_starts:
-            ret.append(AllocatedWeek(start=start, end=start+timedelta(days=7), share=shares.pop(0)))
+            if start == memorial_day(self.year) - timedelta(days=1):
+                start = start + timedelta(days=2)
+            ret.append(AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0)))
 
         ret.sort(key=lambda x: x.start)
         return ret
@@ -500,28 +548,5 @@ if __name__ == "__main__":
     if ret.failed > 0:
         sys.exit(1)
 
+    check_house_year(2021)
 
-    for year in range(2020, 2051):
-        print(year, cold_weeks_end(year))
-        if memorial_day_week_start(year) >= hot_weeks_start(year):
-            print(f"In {year} memorial_day is in the hot weeks")
-
-    # for year in range(2021, 2025):
-    #     print("-"*20)
-    #     print(year)
-    #     print("-"*20)
-    #     l = [
-    #         (early_cool_weeks_start(year), "Early Cool Weeks Start",),
-    #         (memorial_day_week_start(year), "Memorial Day Week Start",),
-    #         (labor_day_week_start(year), "Labor Day Week Start",),
-    #         (independence_day_week_start(year), "Independence Day Week Start",),
-    #         (tate_annual_week_start(year), "Tate Annual Meeting Week Start",),
-    #         (early_warm_weeks_start(year), "Early Warm Weeks Start",),
-    #         (hot_weeks_start(year), "Hot Weeks Start",),
-    #         (late_warm_weeks_start(year), "Late Warm Weeks Start",),
-    #         (late_cool_weeks_start(year), "Late Cool Weeks Start",),
-    #         (cold_weeks_start(year), "Cold Weeks Start",),
-    #     ]
-    #     l.sort()
-
-    #     pprint.pprint(l)

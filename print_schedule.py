@@ -14,8 +14,8 @@ def print_year_schedule(year):
             name = winship_schedule.share_name_to_name(week.share)
             holiday = ""
             if week.holiday:
-                holiday = " ({})".format(week.holiday)
-            print("\t{} - {}{}".format(week.start.strftime("%x"), name, holiday))
+                holiday = f" ({week.holiday})"
+            print(f"\t{week.start.strftime('%A, %x')} - {name}{holiday}")
         print()
     print("-"*80)
 
