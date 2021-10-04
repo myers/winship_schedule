@@ -104,10 +104,10 @@ SCHEDULE = {
             'myers-1',
             'richard-1',
             'hankey-1',
+            'frank_may-1',
             'frank_latimer-1',
             'becca-1',
             'david-1',
-            'frank_may-1',
             'jim-1',
         ],
         'warm': [
@@ -129,22 +129,22 @@ SCHEDULE = {
             'lane-1',
             'frank_may-3',
             'eddie-3',
+            'richard-3',
             'jorden-2',
             'will-1',
             'hugh_ann_laurel-1',
-            'richard-3',
         ],
         'cold': [
-            'will-2',
-            'eddie-4',
-            'frank_may-4',
-            'frank_latimer-4',
-            'richard-4',
-            'lane-2',
-            'hankey-4',
-            'jorden-1',
-            'joe-2',
-            'hugh_ann_laurel-2',
+            'frank_latimer-3',
+            'joe-1',
+            'hankey-3',
+            'lane-1',
+            'eddie-3',
+            'richard-3',
+            'jorden-2',
+            'will-1',
+            'hugh_ann_laurel-1',
+            'frank_may-3',
         ],
     },
     'even': {
@@ -321,7 +321,10 @@ def cold_weeks_start(year):
     return late_cool_weeks_start(year) + timedelta(days=7*5)
 
 def share_name_to_name(share):
-    return share.split("-")[0].replace("_", " ").title()
+    ret = share.split("-")[0].replace("_", " ").title()
+    if ret == "Hugh Ann Laurel":
+        return "Hugh & Ann Laurel"
+    return ret
 
 def cleanup_weekend_start(year):
     return early_cool_weeks_start(year) - timedelta(days=2)
@@ -358,21 +361,49 @@ from collections import namedtuple, deque
 
 AllocatedWeek = namedtuple('AllocatedWeek', ('start', 'end', 'share', 'holiday'), defaults=(None,))
 
+
+# how many weeks should we test to make sure someone doesn't have another week after (e.g. I shouldn't have two weeks at date only 6 weeks apart)
+MIN_WEEKS_BETWEEN_ALLOCATED = 7
+
+MAX_WEEKS_BETWEEN_ALLOCATED = 15
+
 def check_house_year(year):
     """
     check all the time is claimed  (weed_end = next_week_start + 1 day)
     """
-    hy = HouseYear(2021)
+
+    problems = []
+
+    # k: name, val: last iso week they were in the house
+    last_weeks = {}
+    hy = HouseYear(year)
     last_week = None
     for chunk in hy.chunks():
-        print(chunk.name)
+        #print(chunk.name)
         for week in chunk.weeks:
-            print(f"\t{week!r}")
+            # make sure 
+            name = week.share.split("-")[0]
+            week_number = week.start.isocalendar()[1]
+            if name in last_weeks:
+                n_weeks_ago = week_number - last_weeks[name]
+                if n_weeks_ago < MIN_WEEKS_BETWEEN_ALLOCATED:
+                    problems.append(f"{week.start!r} {name} had their allocated week only {n_weeks_ago} weeks ago")
+                if n_weeks_ago > MAX_WEEKS_BETWEEN_ALLOCATED:
+                    problems.append(f"{week.start!r} {name} had their allocated week {n_weeks_ago} weeks ago")
+
+            last_weeks[name] = week_number
+
+
+            #print(f"\t{week!r}")
             if last_week is None:
                 last_week = week
             else:
                 assert last_week.end == week.start, f"{last_week.end!r} should equal {week.start!r}"
                 last_week = week
+    if problems:
+        pprint.pprint(problems)
+        return False
+    return True
 
 class HouseYear:
     def __init__(self, year):

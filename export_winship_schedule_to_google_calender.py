@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import datetime
+import time
 
 import winship_schedule
 import google_calender
@@ -43,12 +44,14 @@ def delete_all_events(service):
             }
             rq = service.events().delete(**kwargs)
             resp = rq.execute()
+            print("sleeping for 30 seconds")
+            time.sleep(30)
         page_token = events_result.get('nextPageToken')
         if not page_token:
             break
 
 
-def main(year=2020):
+def main(year=2021):
     service = google_calender.get_calender_service()
 
     delete_all_events(service)
