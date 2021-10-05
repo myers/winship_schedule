@@ -8,9 +8,9 @@ We want to give everyone equal access to different parts of the year.  For thos
 
 We also want to evenly split the Holidays:
 
- - Memorial Day (3 day weekend)
+ - Memorial Day
  - Independence Day
- - Labor Day (3 day weekend)
+ - Labor Day
  - Thanksgiving
  - Christmas
 

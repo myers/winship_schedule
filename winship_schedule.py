@@ -151,29 +151,30 @@ SCHEDULE = {
         'cool': [
             'hugh_ann_laurel-1',
             'lane-1',
-            'richard-1',
-            'frank_latimer-1',
-            'will-1',
             'hankey-1',
+            'frank_latimer-1',
+            'eddie-1',
+            'richard-1',
             'hayley-1',
             'frank_may-1',
             'joe-1',
-            'eddie-1',
+            'will-1',
         ],
         'warm': [
             'eddie-2',
-            'will-2',
             'hayley-2',
             'lane-2',
             'richard-2',
             'hugh_ann_laurel-2',
-            'frank_latimer-2',
+            'will-2',
             'hankey-2',
+            'frank_latimer-2',
             'frank_may-2',
             'joe-2',
         ],
         'hot': [
             'jorden-2',
+            'hankey-3',
             'becca-1',
             'frank_may-3',
             'eddie-3',
@@ -181,20 +182,19 @@ SCHEDULE = {
             'frank_latimer-3',
             'david-1',
             'jim-1',
-            'hankey-3',
             'myers-1',
         ],
         'cold': [
+            'frank_latimer-4',
             'richard-4',
             'myers-2',
             'hankey-4',
             'jorden-1',
+            'frank_may-4',
+            'eddie-4',
             'jim-2',
             'david-2',
             'becca-2',
-            'eddie-4',
-            'frank_may-4',
-            'frank_latimer-4',
         ],
     }
 }
@@ -579,5 +579,5 @@ if __name__ == "__main__":
     if ret.failed > 0:
         sys.exit(1)
 
-    check_house_year(2021)
+    check_house_year(2022)
 
