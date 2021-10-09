@@ -34,7 +34,7 @@ Becca C             5%
 "Lane C"            10%
 Eddie L             10%
 "D, H, AL L"        10%
-Hayley & Jorden P   10%
+Hayley & Jordan P   10%
 Frank L             10%
 """
 
@@ -73,8 +73,8 @@ SHARE_WEEKS = [
   'lane-2',
   'hayley-1',
   'hayley-2',
-  'jorden-2',
-  'jorden-1',
+  'jordan-2',
+  'jordan-1',
   'richard-1',
   'richard-2',
   'richard-3',
@@ -130,7 +130,7 @@ SCHEDULE = {
             'frank_may-3',
             'eddie-3',
             'richard-3',
-            'jorden-2',
+            'jordan-2',
             'will-1',
             'hugh_ann_laurel-1',
         ],
@@ -141,7 +141,7 @@ SCHEDULE = {
             'lane-1',
             'eddie-3',
             'richard-3',
-            'jorden-2',
+            'jordan-2',
             'will-1',
             'hugh_ann_laurel-1',
             'frank_may-3',
@@ -173,7 +173,7 @@ SCHEDULE = {
             'joe-2',
         ],
         'hot': [
-            'jorden-2',
+            'jordan-2',
             'hankey-3',
             'becca-1',
             'frank_may-3',
@@ -189,7 +189,7 @@ SCHEDULE = {
             'richard-4',
             'myers-2',
             'hankey-4',
-            'jorden-1',
+            'jordan-1',
             'frank_may-4',
             'eddie-4',
             'jim-2',
