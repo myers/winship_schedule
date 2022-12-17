@@ -51,10 +51,10 @@ def delete_all_events(service):
             break
 
 
-def main(year=2021):
+def main(year=2022):
     service = google_calender.get_calender_service()
 
-    delete_all_events(service)
+    #delete_all_events(service)
     house_year = winship_schedule.HouseYear(year)
 
     for chunk in house_year.chunks():

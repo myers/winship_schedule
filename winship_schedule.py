@@ -163,13 +163,13 @@ SCHEDULE = {
         'warm': [
             'eddie-2',
             'hayley-2',
-            'lane-2',
+            'frank_may-2',
             'richard-2',
             'hugh_ann_laurel-2',
             'will-2',
             'hankey-2',
             'frank_latimer-2',
-            'frank_may-2',
+            'lane-2',
             'joe-2',
         ],
         'hot': [
@@ -188,13 +188,13 @@ SCHEDULE = {
             'frank_latimer-4',
             'richard-4',
             'myers-2',
-            'hankey-4',
             'jordan-1',
             'frank_may-4',
             'eddie-4',
             'jim-2',
-            'david-2',
             'becca-2',
+            'david-2',
+            'hankey-4',
         ],
     }
 }
