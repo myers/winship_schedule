@@ -329,6 +329,12 @@ def early_cool_weeks_start(year):
     return ret
 
 
+def early_cold_weeks_start(year):
+    ret = early_cool_weeks_start(year) - timedelta(days=7)
+    assert_sunday(ret)
+    return ret
+
+
 def late_warm_weeks_start(year):
     return tate_annual_week_start(year) + timedelta(
         days=7 * (10 - hot_weeks_before_tate_annual_week_start(year) + 1)
@@ -339,7 +345,7 @@ def late_cool_weeks_start(year):
     return late_warm_weeks_start(year) + timedelta(days=7 * 5)
 
 
-def cold_weeks_start(year):
+def late_cold_weeks_start(year):
     return late_cool_weeks_start(year) + timedelta(days=7 * 5)
 
 
@@ -351,7 +357,7 @@ def share_name_to_name(share):
 
 
 def cleanup_weekend_start(year):
-    return early_cool_weeks_start(year) - timedelta(days=2)
+    return early_cool_weeks_start(year) - timedelta(days=2 + 7)
 
 
 def hot_weeks_before_tate_annual_week_start(year):
@@ -455,6 +461,7 @@ class HouseYear:
             share="Everyone!",
         )
         yield WeeksChunk("Cleanup Weekend", [cleanup])
+        yield WeeksChunk("Early Cold Weeks", list(self.cold_weeks.weeks())[:1])
         yield WeeksChunk("Early Cool Weeks", list(self.cool_weeks.weeks())[:5])
         yield WeeksChunk("Early Warm Weeks", list(self.warm_weeks.weeks())[:5])
 
@@ -478,7 +485,7 @@ class HouseYear:
         )
         yield WeeksChunk("Late Warm Weeks", list(self.warm_weeks.weeks())[5:])
         yield WeeksChunk("Late Cool Weeks", list(self.cool_weeks.weeks())[5:])
-        yield WeeksChunk("Cold Weeks", list(self.cold_weeks.weeks()))
+        yield WeeksChunk("Cold Weeks", list(self.cold_weeks.weeks())[1:])
 
 
 class HouseWeeks:
@@ -518,7 +525,8 @@ class ColdWeeks(HouseWeeks):
 
     def week_starts(self):
         ret = []
-        ret.extend(self.add_n_weeks(cold_weeks_start(self.year), 10))
+        ret.extend(self.add_n_weeks(early_cold_weeks_start(self.year), 1))
+        ret.extend(self.add_n_weeks(late_cold_weeks_start(self.year), 9))
         return ret
 
     def weeks(self):

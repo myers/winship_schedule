@@ -4,6 +4,7 @@ import sys
 
 import winship_schedule
 
+
 def print_year_schedule(year):
     print(year)
     print()
@@ -17,7 +18,8 @@ def print_year_schedule(year):
                 holiday = f" ({week.holiday})"
             print(f"\t{week.start.strftime('%A, %x')} - {name}{holiday}")
         print()
-    print("-"*80)
+    print("-" * 80)
+
 
 def print_holiday(year):
     house_year = winship_schedule.HouseYear(year)
@@ -29,14 +31,17 @@ def print_holiday(year):
                 holiday = " *"
             if week.start != winship_schedule.christmas_week_start(year):
                 continue
-            print("{} - {} - {}{}".format(year, week.start.strftime("%x"), name, holiday))
+            print(
+                "{} - {} - {}{}".format(year, week.start.strftime("%x"), name, holiday)
+            )
 
 
 if __name__ == "__main__":
     import doctest
+
     ret = doctest.testmod()
     if ret.failed > 0:
         sys.exit(1)
 
-    for year in range(2022, 2023):
+    for year in range(2023, 2026):
         print_year_schedule(year)

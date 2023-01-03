@@ -24,7 +24,6 @@ We want to have a schedule that we can work with at least five years out.   Tho
 
 The last week we use the house should be the week after Christmas.
 
-
 ## How I solved this
 
 I wanted to do this on a computer, because if we can get a computer to create this schedule it's easy to generate a list for as many years as we care to.
@@ -45,4 +44,4 @@ After the first even and odd years, the lists are rotated down by one, making a 
 
 BUT Holiday weekends shift around, we want to be sure we hand these out evenly.  Memorial Day always happens in the early warm weeks, Independence Day the hot weeks, Labor Day the late warm weeks, Thanksgiving the late cool weeks, and Christmas the cold weeks.  In light of that I made it so the first person on the list that season got the first holiday week for that season, second on the list got the second holiday week.
 
-https://developers.google.com/calendar/quickstart/python
+<https://developers.google.com/calendar/quickstart/python>
