@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-import sys, pprint
+from collections import namedtuple, deque
+import sys
+import pprint
 from datetime import date, timedelta
 
 """
@@ -39,165 +41,164 @@ Frank L             10%
 """
 
 
-
 SHARE_WEEKS = [
-  'becca-1',
-  'becca-2',
-  'david-1',
-  'david-2',
-  'hugh_ann_laurel-1',
-  'hugh_ann_laurel-2',
-  'eddie-1',
-  'eddie-2',
-  'eddie-3',
-  'eddie-4',
-  'frank_latimer-1',
-  'frank_latimer-2',
-  'frank_latimer-3',
-  'frank_latimer-4',
-  'frank_may-1',
-  'frank_may-2',
-  'frank_may-3',
-  'frank_may-4',
-  'hankey-1',
-  'hankey-2',
-  'hankey-3',
-  'hankey-4',
-  'jim-1',
-  'jim-2',
-  'joe-1',
-  'joe-2',
-  'myers-1',
-  'myers-2',
-  'lane-1',
-  'lane-2',
-  'hayley-1',
-  'hayley-2',
-  'jordan-2',
-  'jordan-1',
-  'richard-1',
-  'richard-2',
-  'richard-3',
-  'richard-4',
-  'will-1',
-  'will-2',
+    "becca-1",
+    "becca-2",
+    "david-1",
+    "david-2",
+    "hugh_ann_laurel-1",
+    "hugh_ann_laurel-2",
+    "eddie-1",
+    "eddie-2",
+    "eddie-3",
+    "eddie-4",
+    "frank_latimer-1",
+    "frank_latimer-2",
+    "frank_latimer-3",
+    "frank_latimer-4",
+    "frank_may-1",
+    "frank_may-2",
+    "frank_may-3",
+    "frank_may-4",
+    "hankey-1",
+    "hankey-2",
+    "hankey-3",
+    "hankey-4",
+    "jim-1",
+    "jim-2",
+    "joe-1",
+    "joe-2",
+    "myers-1",
+    "myers-2",
+    "lane-1",
+    "lane-2",
+    "hayley-1",
+    "hayley-2",
+    "jordan-2",
+    "jordan-1",
+    "richard-1",
+    "richard-2",
+    "richard-3",
+    "richard-4",
+    "will-1",
+    "will-2",
 ]
 
-
-            # 'hankey-1',
-            # 'hayley-1',
-            # 'frank_may-1',
-            # '',
-            # 'eddie-1',
-            # 'myers-1',
-            # 'david-1',
-            # 'richard-1',
-            # 'frank_latimer-1',
-            # '',
+# 'hankey-1',
+# 'hayley-1',
+# 'frank_may-1',
+# '',
+# 'eddie-1',
+# 'myers-1',
+# 'david-1',
+# 'richard-1',
+# 'frank_latimer-1',
+# '',
 
 
 SCHEDULE = {
-    'odd' : {
-        'cool': [
-            'hayley-1',
-            'eddie-1',
-            'myers-1',
-            'richard-1',
-            'hankey-1',
-            'frank_may-1',
-            'frank_latimer-1',
-            'becca-1',
-            'david-1',
-            'jim-1',
+    "odd": {
+        "cool": [
+            "hayley-1",
+            "eddie-1",
+            "myers-1",
+            "richard-1",
+            "hankey-1",
+            "frank_may-1",
+            "frank_latimer-1",
+            "becca-1",
+            "david-1",
+            "jim-1",
         ],
-        'warm': [
-            'david-2',
-            'hankey-2',
-            'frank_latimer-2',
-            'frank_may-2',
-            'jim-2',
-            'becca-2',
-            'hayley-2',
-            'myers-2',
-            'eddie-2',
-            'richard-2',
+        "warm": [
+            "david-2",
+            "hankey-2",
+            "frank_latimer-2",
+            "jim-2",
+            "frank_may-2",
+            "becca-2",
+            "hayley-2",
+            "myers-2",
+            "eddie-2",
+            "richard-2",
         ],
-        'hot': [
-            'frank_latimer-3',
-            'joe-1',
-            'hankey-3',
-            'lane-1',
-            'frank_may-3',
-            'eddie-3',
-            'richard-3',
-            'jordan-2',
-            'will-1',
-            'hugh_ann_laurel-1',
+        "hot": [
+            "frank_latimer-3",
+            "joe-1",
+            "hankey-3",
+            "lane-1",
+            "frank_may-3",
+            "eddie-3",
+            "richard-3",
+            "jordan-2",
+            "will-1",
+            "hugh_ann_laurel-1",
         ],
-        'cold': [
-            'frank_latimer-3',
-            'joe-1',
-            'hankey-3',
-            'lane-1',
-            'eddie-3',
-            'richard-3',
-            'jordan-2',
-            'will-1',
-            'hugh_ann_laurel-1',
-            'frank_may-3',
+        "cold": [
+            "frank_latimer-3",
+            "joe-1",
+            "hankey-3",
+            "lane-1",
+            "eddie-3",
+            "richard-3",
+            "jordan-2",
+            "will-1",
+            "hugh_ann_laurel-1",
+            "frank_may-3",
         ],
     },
-    'even': {
-        'cool': [
-            'hugh_ann_laurel-1',
-            'lane-1',
-            'hankey-1',
-            'frank_latimer-1',
-            'eddie-1',
-            'richard-1',
-            'hayley-1',
-            'frank_may-1',
-            'joe-1',
-            'will-1',
+    "even": {
+        "cool": [
+            "hugh_ann_laurel-1",
+            "lane-1",
+            "hankey-1",
+            "frank_latimer-1",
+            "eddie-1",
+            "richard-1",
+            "hayley-1",
+            "frank_may-1",
+            "joe-1",
+            "will-1",
         ],
-        'warm': [
-            'eddie-2',
-            'hayley-2',
-            'frank_may-2',
-            'richard-2',
-            'hugh_ann_laurel-2',
-            'will-2',
-            'hankey-2',
-            'frank_latimer-2',
-            'lane-2',
-            'joe-2',
+        "warm": [
+            "eddie-2",
+            "hayley-2",
+            "frank_may-2",
+            "richard-2",
+            "hugh_ann_laurel-2",
+            "will-2",
+            "hankey-2",
+            "frank_latimer-2",
+            "lane-2",
+            "joe-2",
         ],
-        'hot': [
-            'jordan-2',
-            'hankey-3',
-            'becca-1',
-            'frank_may-3',
-            'eddie-3',
-            'richard-3',
-            'frank_latimer-3',
-            'david-1',
-            'jim-1',
-            'myers-1',
+        "hot": [
+            "jordan-2",
+            "hankey-3",
+            "becca-1",
+            "frank_may-3",
+            "eddie-3",
+            "richard-3",
+            "frank_latimer-3",
+            "david-1",
+            "jim-1",
+            "myers-1",
         ],
-        'cold': [
-            'frank_latimer-4',
-            'richard-4',
-            'myers-2',
-            'jordan-1',
-            'frank_may-4',
-            'eddie-4',
-            'jim-2',
-            'becca-2',
-            'david-2',
-            'hankey-4',
+        "cold": [
+            "frank_latimer-4",
+            "richard-4",
+            "myers-2",
+            "jordan-1",
+            "frank_may-4",
+            "eddie-4",
+            "jim-2",
+            "becca-2",
+            "david-2",
+            "hankey-4",
         ],
-    }
+    },
 }
+
 
 def memorial_day_week_start(year):
     """
@@ -208,12 +209,13 @@ def memorial_day_week_start(year):
     assert_sunday(ret)
     return ret
 
+
 def memorial_day(year):
     """
     last Monday of May
     """
     ret = date(year, 5, 31)
-    while ret.weekday() != 0: # while it's not monday
+    while ret.weekday() != 0:  # while it's not monday
         ret = ret - timedelta(days=1)
     return ret
 
@@ -227,6 +229,7 @@ def labor_day_week_start(year):
     assert_sunday(ret)
     return ret
 
+
 def labor_day(year):
     """
     first Monday of September
@@ -235,12 +238,14 @@ def labor_day(year):
     datetime.date(2020, 9, 7)
     """
     ret = date(year, 9, 1)
-    while ret.weekday() != 0: # while it's not monday
+    while ret.weekday() != 0:  # while it's not monday
         ret = ret + timedelta(days=1)
     return ret
 
+
 def independence_day(year):
     return date(year, 7, 4)
+
 
 def independence_day_week_start(year):
     """
@@ -248,7 +253,8 @@ def independence_day_week_start(year):
     datetime.date(2020, 6, 28)
     """
     ind = independence_day(year)
-    return ind - timedelta(days=ind.weekday()+1)
+    return ind - timedelta(days=ind.weekday() + 1)
+
 
 def thanksgiving_week_start(year):
     """
@@ -259,14 +265,16 @@ def thanksgiving_week_start(year):
     assert_sunday(ret)
     return ret
 
+
 def thanksgiving(year):
     """
     the fourth Thursday of November.
     """
     ret = date(year, 11, 1)
-    while ret.weekday() != 3: # while it's not thursday
+    while ret.weekday() != 3:  # while it's not thursday
         ret = ret + timedelta(days=1)
     return ret + timedelta(days=21)
+
 
 def christmas_week_start(year):
     """
@@ -274,10 +282,12 @@ def christmas_week_start(year):
     datetime.date(2020, 12, 20)
     """
     xmas = christmas(year)
-    return xmas - timedelta(days=xmas.weekday()+1)
+    return xmas - timedelta(days=xmas.weekday() + 1)
+
 
 def christmas(year):
     return date(year, 12, 25)
+
 
 def tate_annual_meeting(year):
     """
@@ -290,6 +300,7 @@ def tate_annual_meeting(year):
         ret = ret + timedelta(days=1)
     return ret
 
+
 def tate_annual_week_start(year):
     """
     >>> tate_annual_week_start(2021)
@@ -297,28 +308,40 @@ def tate_annual_week_start(year):
     """
     return tate_annual_meeting(year) - timedelta(days=6)
 
+
 def hot_weeks_start(year):
-    return tate_annual_week_start(year) - timedelta(days=7*hot_weeks_before_tate_annual_week_start(year))
+    return tate_annual_week_start(year) - timedelta(
+        days=7 * hot_weeks_before_tate_annual_week_start(year)
+    )
+
 
 def early_warm_weeks_start(year):
-    return hot_weeks_start(year) - timedelta(days=7*5)
+    return hot_weeks_start(year) - timedelta(days=7 * 5)
+
 
 def assert_sunday(date):
     assert date.weekday() == 6, date.strftime("%a %x")
 
+
 def early_cool_weeks_start(year):
-    ret = early_warm_weeks_start(year) - timedelta(days=7*5)
+    ret = early_warm_weeks_start(year) - timedelta(days=7 * 5)
     assert_sunday(ret)
     return ret
 
+
 def late_warm_weeks_start(year):
-    return tate_annual_week_start(year) + timedelta(days=7*(10 - hot_weeks_before_tate_annual_week_start(year) + 1))
+    return tate_annual_week_start(year) + timedelta(
+        days=7 * (10 - hot_weeks_before_tate_annual_week_start(year) + 1)
+    )
+
 
 def late_cool_weeks_start(year):
-    return late_warm_weeks_start(year) + timedelta(days=7*5)
+    return late_warm_weeks_start(year) + timedelta(days=7 * 5)
+
 
 def cold_weeks_start(year):
-    return late_cool_weeks_start(year) + timedelta(days=7*5)
+    return late_cool_weeks_start(year) + timedelta(days=7 * 5)
+
 
 def share_name_to_name(share):
     ret = share.split("-")[0].replace("_", " ").title()
@@ -326,14 +349,17 @@ def share_name_to_name(share):
         return "Hugh & Ann Laurel"
     return ret
 
+
 def cleanup_weekend_start(year):
     return early_cool_weeks_start(year) - timedelta(days=2)
+
 
 def hot_weeks_before_tate_annual_week_start(year):
     # TODO: what's special about 2021?  Can I find other years like this?
     if year == 2021:
         return 9
     return 8
+
 
 def sunday_after(dd):
     """
@@ -352,20 +378,23 @@ class Week:
         self.start = start
         self.share = share
 
+
 class WeeksChunk:
     def __init__(self, name, weeks):
         self.name = name
         self.weeks = weeks
 
-from collections import namedtuple, deque
 
-AllocatedWeek = namedtuple('AllocatedWeek', ('start', 'end', 'share', 'holiday'), defaults=(None,))
+AllocatedWeek = namedtuple(
+    "AllocatedWeek", ("start", "end", "share", "holiday"), defaults=(None,)
+)
 
 
 # how many weeks should we test to make sure someone doesn't have another week after (e.g. I shouldn't have two weeks at date only 6 weeks apart)
 MIN_WEEKS_BETWEEN_ALLOCATED = 7
 
 MAX_WEEKS_BETWEEN_ALLOCATED = 15
+
 
 def check_house_year(year):
     """
@@ -379,31 +408,37 @@ def check_house_year(year):
     hy = HouseYear(year)
     last_week = None
     for chunk in hy.chunks():
-        #print(chunk.name)
+        # print(chunk.name)
         for week in chunk.weeks:
-            # make sure 
+            # make sure
             name = week.share.split("-")[0]
             week_number = week.start.isocalendar()[1]
             if name in last_weeks:
                 n_weeks_ago = week_number - last_weeks[name]
                 if n_weeks_ago < MIN_WEEKS_BETWEEN_ALLOCATED:
-                    problems.append(f"{week.start!r} {name} had their allocated week only {n_weeks_ago} weeks ago")
+                    problems.append(
+                        f"{week.start!r} {name} had their allocated week only {n_weeks_ago} weeks ago"
+                    )
                 if n_weeks_ago > MAX_WEEKS_BETWEEN_ALLOCATED:
-                    problems.append(f"{week.start!r} {name} had their allocated week {n_weeks_ago} weeks ago")
+                    problems.append(
+                        f"{week.start!r} {name} had their allocated week {n_weeks_ago} weeks ago"
+                    )
 
             last_weeks[name] = week_number
 
-
-            #print(f"\t{week!r}")
+            # print(f"\t{week!r}")
             if last_week is None:
                 last_week = week
             else:
-                assert last_week.end == week.start, f"{last_week.end!r} should equal {week.start!r}"
+                assert (
+                    last_week.end == week.start
+                ), f"{last_week.end!r} should equal {week.start!r}"
                 last_week = week
     if problems:
         pprint.pprint(problems)
         return False
     return True
+
 
 class HouseYear:
     def __init__(self, year):
@@ -414,31 +449,50 @@ class HouseYear:
         self.cold_weeks = ColdWeeks(year)
 
     def chunks(self):
-        cleanup = AllocatedWeek(start=cleanup_weekend_start(self.year), end=sunday_after(cleanup_weekend_start(self.year)), share="Everyone!")
+        cleanup = AllocatedWeek(
+            start=cleanup_weekend_start(self.year),
+            end=sunday_after(cleanup_weekend_start(self.year)),
+            share="Everyone!",
+        )
         yield WeeksChunk("Cleanup Weekend", [cleanup])
         yield WeeksChunk("Early Cool Weeks", list(self.cool_weeks.weeks())[:5])
         yield WeeksChunk("Early Warm Weeks", list(self.warm_weeks.weeks())[:5])
 
-        yield WeeksChunk("Hot Weeks", list(self.hot_weeks.weeks())[:hot_weeks_before_tate_annual_week_start(self.year)])
-        tam = AllocatedWeek(start=tate_annual_week_start(self.year), end=tate_annual_week_start(self.year)+timedelta(days=7), share="Party!")
+        yield WeeksChunk(
+            "Hot Weeks",
+            list(self.hot_weeks.weeks())[
+                : hot_weeks_before_tate_annual_week_start(self.year)
+            ],
+        )
+        tam = AllocatedWeek(
+            start=tate_annual_week_start(self.year),
+            end=tate_annual_week_start(self.year) + timedelta(days=7),
+            share="Party!",
+        )
         yield WeeksChunk("Tate Annual Week", [tam])
-        yield WeeksChunk("Hot Weeks (continued)", list(self.hot_weeks.weeks())[hot_weeks_before_tate_annual_week_start(self.year):])
+        yield WeeksChunk(
+            "Hot Weeks (continued)",
+            list(self.hot_weeks.weeks())[
+                hot_weeks_before_tate_annual_week_start(self.year) :
+            ],
+        )
         yield WeeksChunk("Late Warm Weeks", list(self.warm_weeks.weeks())[5:])
         yield WeeksChunk("Late Cool Weeks", list(self.cool_weeks.weeks())[5:])
         yield WeeksChunk("Cold Weeks", list(self.cold_weeks.weeks()))
+
 
 class HouseWeeks:
     def __init__(self, year):
         self.year = year
 
     def year_type(self):
-        year_type = 'even'
+        year_type = "even"
         if self.year % 2 == 1:
-            year_type = 'odd'
+            year_type = "odd"
         return year_type
 
     def schedule_offset(self):
-        return int((self.year - 2020)/2)
+        return int((self.year - 2020) / 2)
 
     def add_n_weeks(self, start, count):
         assert_sunday(start)
@@ -456,10 +510,11 @@ class HouseWeeks:
         shares = list(shares)
         return shares
 
+
 class ColdWeeks(HouseWeeks):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.week_type = 'cold'
+        self.week_type = "cold"
 
     def week_starts(self):
         ret = []
@@ -475,23 +530,40 @@ class ColdWeeks(HouseWeeks):
         thxgiving = thanksgiving_week_start(self.year)
         week_starts = [x for x in week_starts if x != thxgiving]
         assert len(week_starts) == 9
-        ret.append(AllocatedWeek(start=thxgiving, end=sunday_after(thxgiving), share=shares.pop(0), holiday="Thanksgiving"))
+        ret.append(
+            AllocatedWeek(
+                start=thxgiving,
+                end=sunday_after(thxgiving),
+                share=shares.pop(0),
+                holiday="Thanksgiving",
+            )
+        )
 
         xmas = christmas_week_start(self.year)
         week_starts = [x for x in week_starts if x != xmas]
         assert len(week_starts) == 8
-        ret.append(AllocatedWeek(start=xmas, end=sunday_after(xmas), share=shares.pop(0), holiday="Christmas"))
+        ret.append(
+            AllocatedWeek(
+                start=xmas,
+                end=sunday_after(xmas),
+                share=shares.pop(0),
+                holiday="Christmas",
+            )
+        )
 
         for start in week_starts:
-            ret.append(AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0)))
+            ret.append(
+                AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0))
+            )
 
         ret.sort(key=lambda x: x.start)
         return ret
 
+
 class WarmWeeks(HouseWeeks):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.week_type = 'warm'
+        self.week_type = "warm"
 
     def week_starts(self):
         ret = []
@@ -508,32 +580,59 @@ class WarmWeeks(HouseWeeks):
         md = memorial_day_week_start(self.year)
         week_starts = [x for x in week_starts if x != md]
         assert len(week_starts) == 9
-        ret.append(AllocatedWeek(start=md, end=md+timedelta(days=9), share=shares.pop(0), holiday="Memorial Day"))
+        ret.append(
+            AllocatedWeek(
+                start=md,
+                end=md + timedelta(days=9),
+                share=shares.pop(0),
+                holiday="Memorial Day",
+            )
+        )
 
         ld = labor_day_week_start(self.year)
         week_starts = [x for x in week_starts if x != ld]
         assert len(week_starts) == 8
-        ret.append(AllocatedWeek(start=ld, end=ld+timedelta(days=9), share=shares.pop(0), holiday="Labor Day"))
+        ret.append(
+            AllocatedWeek(
+                start=ld,
+                end=ld + timedelta(days=9),
+                share=shares.pop(0),
+                holiday="Labor Day",
+            )
+        )
 
         for start in week_starts:
             if start == md + timedelta(days=7):
                 start = start + timedelta(days=2)
             if start == ld + timedelta(days=7):
                 start = start + timedelta(days=2)
-            ret.append(AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0)))
+            ret.append(
+                AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0))
+            )
 
         ret.sort(key=lambda x: x.start)
         return ret
 
+
 class HotWeeks(HouseWeeks):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.week_type = 'hot'
+        self.week_type = "hot"
 
     def week_starts(self):
         ret = []
-        ret.extend(self.add_n_weeks(hot_weeks_start(self.year), hot_weeks_before_tate_annual_week_start(self.year)))
-        ret.extend(self.add_n_weeks(tate_annual_week_start(self.year) + timedelta(days=7), 10 - hot_weeks_before_tate_annual_week_start(self.year)))
+        ret.extend(
+            self.add_n_weeks(
+                hot_weeks_start(self.year),
+                hot_weeks_before_tate_annual_week_start(self.year),
+            )
+        )
+        ret.extend(
+            self.add_n_weeks(
+                tate_annual_week_start(self.year) + timedelta(days=7),
+                10 - hot_weeks_before_tate_annual_week_start(self.year),
+            )
+        )
         return ret
 
     def weeks(self):
@@ -545,20 +644,30 @@ class HotWeeks(HouseWeeks):
         ind = independence_day_week_start(self.year)
         week_starts = [x for x in week_starts if x != ind]
         assert len(week_starts) == 9
-        ret.append(AllocatedWeek(start=ind, end=sunday_after(ind), share=shares.pop(0), holiday="Independence Day"))
+        ret.append(
+            AllocatedWeek(
+                start=ind,
+                end=sunday_after(ind),
+                share=shares.pop(0),
+                holiday="Independence Day",
+            )
+        )
 
         for start in week_starts:
             if start == memorial_day(self.year) - timedelta(days=1):
                 start = start + timedelta(days=2)
-            ret.append(AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0)))
+            ret.append(
+                AllocatedWeek(start=start, end=sunday_after(start), share=shares.pop(0))
+            )
 
         ret.sort(key=lambda x: x.start)
         return ret
 
+
 class CoolWeeks(HouseWeeks):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.week_type = 'cool'
+        self.week_type = "cool"
 
     def week_starts(self):
         ret = []
@@ -570,14 +679,14 @@ class CoolWeeks(HouseWeeks):
         for idx, start in enumerate(self.week_starts()):
             offset = (idx + self.schedule_offset()) % 10
             share = SCHEDULE[self.year_type()][self.week_type][offset]
-            yield AllocatedWeek(start=start, end=start+timedelta(days=7), share=share)
+            yield AllocatedWeek(start=start, end=start + timedelta(days=7), share=share)
 
 
 if __name__ == "__main__":
     import doctest
+
     ret = doctest.testmod()
     if ret.failed > 0:
         sys.exit(1)
 
     check_house_year(2022)
-
