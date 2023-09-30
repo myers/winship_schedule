@@ -51,7 +51,7 @@ def delete_all_events(service):
             break
 
 
-def main(year=2022):
+def main(year=2023):
     service = google_calender.get_calender_service()
 
     #delete_all_events(service)
