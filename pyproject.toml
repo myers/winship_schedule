@@ -5,10 +5,11 @@ description = ""
 authors = ["Myers Carpenter <myers@maski.org>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.10"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
+openpyxl = "^3.1.5"
 
 [tool.poetry.dev-dependencies]
 

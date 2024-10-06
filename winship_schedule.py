@@ -351,6 +351,8 @@ def late_cold_weeks_start(year):
 
 def share_name_to_name(share):
     ret = share.split("-")[0].replace("_", " ").title()
+    if ret == "Hankey":
+        return "Charlie"
     if ret == "Hugh Ann Laurel":
         return "Hugh & Ann Laurel"
     return ret
@@ -404,7 +406,7 @@ MAX_WEEKS_BETWEEN_ALLOCATED = 15
 
 def check_house_year(year):
     """
-    check all the time is claimed  (weed_end = next_week_start + 1 day)
+    check all the time is claimed  (week_end = next_week_start + 1 day)
     """
 
     problems = []
@@ -697,4 +699,4 @@ if __name__ == "__main__":
     if ret.failed > 0:
         sys.exit(1)
 
-    check_house_year(2022)
+    check_house_year(2024)

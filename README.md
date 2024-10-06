@@ -18,7 +18,7 @@ We also want the week and weekend of the Tate Annual Meeting to be open to all.
 
 We should have a Clean up weekend from the Friday of the first week to the Sunday.
 
-We want our scheduled weeks to have enought time between them so that it's not hard use them all.  Right now we are working towards the ideal of 8 at least weeks between them.
+We want our scheduled weeks to have enough time between them so that it's not hard use them all.  Right now we are working towards the ideal of 8 at least weeks between them.
 
 We want to have a schedule that we can work with at least five years out.   Those with kids have to plan their summers far out in advance.
 
