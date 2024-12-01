@@ -95,60 +95,43 @@ SHARE_WEEKS = [
 # 'frank_latimer-1',
 # '',
 
+#             "hayley-1",
+#             "myers-1",
+#             "becca-1",
+#            "david-1",
+#             "jim-1",
+
 
 SCHEDULE = {
     "odd": {
         "cool": [
+            "richard-3",
+            "frank_latimer-3",
             "hayley-1",
-            "eddie-1",
+            "hankey-3",
             "myers-1",
-            "richard-1",
-            "hankey-1",
-            "frank_may-1",
-            "frank_latimer-1",
+            "frank_may-3",
+            "eddie-3",
             "becca-1",
             "david-1",
             "jim-1",
         ],
-        "warm": [
-            "david-2",
-            "hankey-2",
-            "frank_latimer-2",
-            "jim-2",
-            "frank_may-2",
-            "becca-2",
-            "hayley-2",
-            "myers-2",
-            "eddie-2",
-            "richard-2",
-        ],
         "hot": [
+            "richard-3",
             "frank_latimer-3",
             "joe-1",
             "hankey-3",
             "lane-1",
             "frank_may-3",
             "eddie-3",
-            "richard-3",
             "jordan-2",
             "will-1",
             "hugh_ann_laurel-1",
-        ],
-        "cold": [
-            "frank_latimer-3",
-            "joe-1",
-            "hankey-3",
-            "lane-1",
-            "eddie-3",
-            "richard-3",
-            "jordan-2",
-            "will-1",
-            "hugh_ann_laurel-1",
-            "frank_may-3",
         ],
     },
     "even": {
         "cool": [
+            "will-1",
             "hugh_ann_laurel-1",
             "lane-1",
             "hankey-1",
@@ -158,21 +141,9 @@ SCHEDULE = {
             "hayley-1",
             "frank_may-1",
             "joe-1",
-            "will-1",
-        ],
-        "warm": [
-            "eddie-2",
-            "hayley-2",
-            "frank_may-2",
-            "richard-2",
-            "hugh_ann_laurel-2",
-            "will-2",
-            "hankey-2",
-            "frank_latimer-2",
-            "lane-2",
-            "joe-2",
         ],
         "hot": [
+            "myers-1",
             "jordan-2",
             "hankey-3",
             "becca-1",
@@ -182,23 +153,15 @@ SCHEDULE = {
             "frank_latimer-3",
             "david-1",
             "jim-1",
-            "myers-1",
-        ],
-        "cold": [
-            "frank_latimer-4",
-            "richard-4",
-            "myers-2",
-            "jordan-1",
-            "frank_may-4",
-            "eddie-4",
-            "jim-2",
-            "becca-2",
-            "david-2",
-            "hankey-4",
         ],
     },
 }
 
+SCHEDULE["odd"]["warm"] = list(reversed(SCHEDULE["odd"]["cool"]))
+SCHEDULE["odd"]["cold"] = list(reversed(SCHEDULE["odd"]["hot"]))
+
+SCHEDULE["even"]["warm"] = list(reversed(SCHEDULE["even"]["cool"]))
+SCHEDULE["even"]["cold"] = list(reversed(SCHEDULE["even"]["hot"]))
 
 def memorial_day_week_start(year):
     """
@@ -599,6 +562,7 @@ class WarmWeeks(HouseWeeks):
             )
         )
 
+        # Get 10th in the list of shares for labor day
         ld = labor_day_week_start(self.year)
         week_starts = [x for x in week_starts if x != ld]
         assert len(week_starts) == 8
@@ -606,7 +570,7 @@ class WarmWeeks(HouseWeeks):
             AllocatedWeek(
                 start=ld,
                 end=ld + timedelta(days=9),
-                share=shares.pop(0),
+                share=shares.pop(4),
                 holiday="Labor Day",
             )
         )
@@ -699,4 +663,4 @@ if __name__ == "__main__":
     if ret.failed > 0:
         sys.exit(1)
 
-    check_house_year(2024)
+    check_house_year(2025)

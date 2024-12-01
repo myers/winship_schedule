@@ -62,9 +62,11 @@ def export_to_excel(start_year, end_year, filename):
                 cell.fill = PatternFill(start_color=bg_color, end_color=bg_color, fill_type="solid")
                 cell.font = Font(color=font_color)
                 
-                # Add comment with date range and chunk type
+                # Add comment with date range, chunk type, and holiday (if any)
                 date_range = f"{week.start.strftime('%Y-%m-%d')} to {week.end.strftime('%Y-%m-%d')}"
                 comment_text = f"{date_range}\n{chunk.name}"
+                if hasattr(week, 'holiday') and week.holiday:
+                    comment_text += f"\nHoliday: {week.holiday}"
                 comment = Comment(comment_text, "Winship Schedule")
                 cell.comment = comment
 
