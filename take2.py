@@ -132,11 +132,19 @@ class AllocatedWeek:
 
 
 def rotate_list(lst, n):
-    """Rotate a list by n positions to the right (positive n) or left (negative n)"""
+    """Rotate a list by n positions to the right (positive n) or left (negative n)
+    
+    >>> test_list = list(range(20))  # [0, 1, 2, ..., 19]
+    >>> rotated = rotate_list(test_list, 11)
+    >>> rotated[0]  # The 11th item (index 10) should now be first
+    10
+    >>> rotated == [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    True
+    """
     if not lst:
         return lst
     n = n % len(lst)  # Handle cases where n > len(lst)
-    return lst[-n:] + lst[:-n]
+    return lst[n:] + lst[:n]
 
 
 def opposite_kind(kind):
@@ -165,14 +173,22 @@ class HouseYear:
     def __init__(self, year, debug=False):
         self.year = year
         self.debug = debug
-        # so that the 5% shares get hot/cold one year, and warm/cool the next year
-        # if self.year % 2 == 0:
-        #     year_offset = year_offset + 5 % len(holiday_shares)
-        year_offset = (self.year - 2025) % len(holiday_shares)            
+        year_offset = self.year_offset()
+        if self.debug:
+            print(f"year_offset: {year_offset}")
         self.rotated_shares = rotate_list(
             holiday_shares, year_offset
         )
+        if self.debug:
+            print(f"rotated_shares: {self.rotated_shares}")
         self.weeks = []
+
+    def year_offset(self):
+        base_offset = (self.year - 2025)
+        if self.year % 2 == 0:  # even years
+            return 10 + base_offset
+        else:  # odd years
+            return base_offset
 
     def compute_schedule(self):
         self.weeks.append(AllocatedWeek(early_cold_weeks_start(self.year), "cold"))
@@ -268,7 +284,15 @@ class HouseYear:
                 if self.is_ten_percent_share(week.share):
                     self.allocate_weeks_ten_percent(index)
 
-    def compute_remaining_shares(self):
+        # now the 5 percenters their other weeks                
+        for index, week in enumerate(self.weeks[20:]):
+            if week.start in self.holiday_weeks().keys():
+                if self.is_five_percent_share(week.share):
+                    self.allocate_weeks_five_percent(index)
+
+    def compute_initial_shares(self):
+        if self.debug:
+            print(f"compute_initial_shares")
         allocated_shares = set(
             [
                 share
@@ -286,6 +310,8 @@ class HouseYear:
             if self.debug:
                 print(f"share: {share}")
             for index, week in enumerate(self.weeks):
+                if index == 0:
+                    continue
                 if week.share is not None:
                     continue
                 week.share = share
@@ -359,19 +385,31 @@ class HouseYear:
         assert self.weeks[index].share is None, f"weeks[{index}]: {self.weeks[index]}"
         self.weeks[index].share = share
 
+    def skip_forward_ten_weeks(self, start_index):
+        """Skip forward 10 weeks, not counting Tate annual week
+        Returns the index after skipping"""
+        next_index = start_index
+        weeks_counted = 0
+        while weeks_counted < 10:
+            next_index = wrap_around(self.weeks, next_index + 1)
+            if self.debug:
+                print(f"next_index: {next_index} {self.weeks[next_index].holiday}")
+            if self.weeks[next_index].holiday != "tate_annual":
+                weeks_counted += 1
+            if self.debug:
+                print(f"weeks_counted: {weeks_counted}")
+        return next_index
+
     def allocate_weeks_ten_percent(self, index):
+        if self.debug:
+            print(f"allocate_weeks_ten_percent: {self.weeks[index]}")
         share = self.weeks[index].share
         for i in range(0, 3):
             if self.debug:
                 print(f"share: {share}, i: {i}")
-            # Skip forward 10 weeks, not counting Tate annual week
-            next_index = index
-            weeks_counted = 0
-            while weeks_counted < 10:
-                next_index = wrap_around(self.weeks, next_index + 1)
-                if self.weeks[next_index].holiday != "tate_annual":
-                    weeks_counted += 1
-            # next_index = wrap_around(self.weeks, index + 10)
+            
+            next_index = self.skip_forward_ten_weeks(index)
+            
             if self.weeks[next_index].share is None:
                 self.allocate_week(next_index, share)
             elif self.weeks[next_index - 1].share is None:
@@ -392,6 +430,11 @@ class HouseYear:
             share_counts[week.share].append(week.kind)
             share_counts[week.share].sort()
 
+        for share in share_counts:
+            if self.is_ten_percent_share(share):
+                assert len(share_counts[share]) == 4
+                assert share_counts[share] == ["cold", "cool", "hot", "warm"], f"{share}: {share_counts[share]}"
+            print(f"{share}: {len(share_counts[share])}")
         pprint.pprint(share_counts)
 
     def print_kind_count(self):
@@ -400,10 +443,11 @@ class HouseYear:
             kind_counts[week.kind] = kind_counts.get(week.kind, 0) + 1
         pprint.pprint(kind_counts)
 
+
     def compute_all(self):
         self.compute_schedule()
         self.compute_holidays()
-        self.compute_remaining_shares()
+        self.compute_initial_shares()
         self.compute_remaining_five_percent_shares()
 
 if __name__ == "__main__":
@@ -415,11 +459,17 @@ if __name__ == "__main__":
     # for week in house_year.weeks:
     #     print(f"{week.start}: {week.kind} {week.holiday} {week.share}")
 
+    house_year = HouseYear(2026, debug=True)
+    # house_year.compute_all()
+    house_year.compute_schedule()
+    house_year.compute_holidays()
+    house_year.compute_initial_shares()
+    for week in house_year.weeks:
+        print(f"{week.start}: {week.kind} {week.holiday} {week.share}")
+    house_year.print_share_count()
+    house_year.print_kind_count()
 
-    for year in range(2025, 2076):
-        house_year = HouseYear(year)
-        try:
-            house_year.compute_all()
-            print(f"year: {year}")
-        except Exception as e:
-            print(f"Error computing year {year}: {e}")
+
+    # house_year = HouseYear(2026, debug=True)
+    # house_year.compute_all()
+

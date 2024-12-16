@@ -4,8 +4,9 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font
 from openpyxl.utils import get_column_letter
 from openpyxl.comments import Comment
+import take2
 import winship_schedule
-from datetime import date, timedelta
+from datetime import timedelta
 
 def get_iso_week(d):
     # If the date is not a Sunday, get the previous Sunday
@@ -18,7 +19,7 @@ def get_colors(share):
     colors = {
         'becca': ('B2B2B2', '000000'),
         'david': ('287289', 'FFFFFF'),
-        'hugh_ann_laurel': ('FFFFC1', '000000'),
+        'hugh': ('FFFFC1', '000000'),
         'eddie': ('2A4C7F', 'FFFFFF'),
         'frank_latimer': ('F7B17D', '000000'),
         'frank_may': ('B8B085', '000000'),
@@ -37,7 +38,7 @@ def get_colors(share):
 def export_to_excel(start_year, end_year, filename):
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Winship Schedule"
+    ws.title = "Winship House Schedule"
 
     # Set up header row with years
     ws.cell(row=1, column=1, value="Week")
@@ -45,30 +46,33 @@ def export_to_excel(start_year, end_year, filename):
         ws.cell(row=1, column=(year - start_year + 2), value=year)
 
     # Fill in the schedule
+    print(f"start_year: {start_year} end_year: {end_year}")
     for year in range(start_year, end_year + 1):
-        house_year = winship_schedule.HouseYear(year)
+        print(f"year: {year}")
+        house_year = take2.HouseYear(year)
+        house_year.compute_all()
         column = year - start_year + 2
         
-        for chunk in house_year.chunks():
-            for week in chunk.weeks:
-                iso_week = get_iso_week(week.start)
-                if iso_week <= 9:
-                    continue  # Skip the first 9 weeks
-                row = iso_week - 9 + 1  # +1 because row 1 is the header, -9 to adjust for skipped weeks
-                cell = ws.cell(row=row, column=column)
-                share_name = winship_schedule.share_name_to_name(week.share)
-                cell.value = share_name
-                bg_color, font_color = get_colors(week.share)
-                cell.fill = PatternFill(start_color=bg_color, end_color=bg_color, fill_type="solid")
-                cell.font = Font(color=font_color)
-                
-                # Add comment with date range, chunk type, and holiday (if any)
-                date_range = f"{week.start.strftime('%Y-%m-%d')} to {week.end.strftime('%Y-%m-%d')}"
-                comment_text = f"{date_range}\n{chunk.name}"
-                if hasattr(week, 'holiday') and week.holiday:
-                    comment_text += f"\nHoliday: {week.holiday}"
-                comment = Comment(comment_text, "Winship Schedule")
-                cell.comment = comment
+        for week in house_year.weeks:
+            print(f"week: {week.start} {week.end} {week.kind} {week.share}")
+            iso_week = get_iso_week(week.start)
+            if iso_week <= 9:
+                continue  # Skip the first 9 weeks
+            row = iso_week - 9 + 1  # +1 because row 1 is the header, -9 to adjust for skipped weeks
+            cell = ws.cell(row=row, column=column)
+            share_name = winship_schedule.share_name_to_name(week.share)
+            cell.value = share_name
+            bg_color, font_color = get_colors(week.share)
+            cell.fill = PatternFill(start_color=bg_color, end_color=bg_color, fill_type="solid")
+            cell.font = Font(color=font_color)
+            
+            # Add comment with date range, chunk type, and holiday (if any)
+            date_range = f"{week.start.strftime('%Y-%m-%d')}"
+            comment_text = f"{date_range}\n{week.kind}"
+            if hasattr(week, 'holiday') and week.holiday:
+                comment_text += f"\nHoliday: {week.holiday}"
+            comment = Comment(comment_text, "Winship Schedule")
+            cell.comment = comment
 
         # Fill in the week numbers for this year
         if year == start_year:
@@ -86,4 +90,4 @@ def export_to_excel(start_year, end_year, filename):
     wb.save(filename)
 
 if __name__ == "__main__":
-    export_to_excel(2025, 2075, "winship_schedule_2025_2075.xlsx")
+    export_to_excel(2025, 2025, "winship_schedule_2025_2075.xlsx")
