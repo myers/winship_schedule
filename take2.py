@@ -80,7 +80,7 @@ odd_holiday_shares = [
         "frank_latimer",
         "becca",
     ],
-    [  
+    [
         "frank_may",
         "lane",
         "hankey",
@@ -100,9 +100,9 @@ even_holiday_shares = [
         "frank_latimer",
         "joe",
         "frank_may",
-        "hayley",
-        "hankey",
         "hugh",
+        "hankey",
+        "hayley",
         "eddie",
         "will",
     ],
@@ -112,9 +112,9 @@ even_holiday_shares = [
         "frank_latimer",
         "myers",
         "frank_may",
-        "jordan",
-        "hankey",
         "david",
+        "hankey",
+        "jordan",
         "eddie",
         "becca",
     ],
@@ -203,11 +203,10 @@ class HouseYear:
             return rotate_list(odd_holiday_shares[0], year_offset) + rotate_list(
                 odd_holiday_shares[1], year_offset
             )
-            #return rotate_list(odd_holiday_shares[0] + odd_holiday_shares[1], year_offset)
-
+            # return rotate_list(odd_holiday_shares[0] + odd_holiday_shares[1], year_offset)
 
     def year_offset(self):
-        return (self.year - 2025) // 2 * 7
+        return (self.year - 2025) // 2
 
     def compute_schedule(self):
         self.weeks.append(AllocatedWeek(early_cold_weeks_start(self.year), "cold"))
@@ -520,17 +519,42 @@ class HouseYear:
         self.compute_initial_shares()
         self.compute_remaining_five_percent_shares()
 
+
 def test_next_n_years(num_years=20):
     holiday_counts = {}
     kind_counts = {}
     total_holidays = 0
-    previous_year_kinds = {}  # Track previous year's kinds for each 5% share
+    previous_year_kinds = {}
+    spacing_counts = {}  # New dictionary to track spacing distribution
 
     for year in range(2025, 2025 + num_years):
         try:
             house_year = HouseYear(year, debug=False)
             house_year.compute_all()
             house_year.assert_share_count()
+
+            # Add spacing verification for 10% shares
+            for share in ten_precent_shares:
+                share_weeks = [
+                    i
+                    for i, week in enumerate(house_year.weeks)
+                    if week.share == share and week.holiday != "Tate Annual"
+                ]
+
+                for i in range(len(share_weeks)):
+                    next_idx = (i + 1) % len(share_weeks)
+                    spacing = (share_weeks[next_idx] - share_weeks[i]) % len(
+                        house_year.weeks
+                    )
+
+                    # Track spacing distribution
+                    spacing_counts[spacing] = spacing_counts.get(spacing, 0) + 1
+
+                    assert spacing >= 8, (
+                        f"Year {year}: Share {share} has weeks too close together. "
+                        f"Weeks at indices {share_weeks[i]} and {share_weeks[next_idx]} "
+                        f"are only {spacing} weeks apart"
+                    )
 
             # Track kinds for each 5% share this year
             current_year_kinds = {}
@@ -604,19 +628,40 @@ def test_next_n_years(num_years=20):
     # After the main results printing, add holiday verification
     print("\nVerifying holiday distribution:")
     for share in sorted(holiday_counts.keys()):
-        if share == 'everyone':  # Skip the everyone share
+        if share == "everyone":  # Skip the everyone share
             continue
-            
+
         is_ten_percent = share in ten_precent_shares
         expected_holidays = 2 if is_ten_percent else 1
-        
-        for holiday in ["Memorial Day", "Independence Day", "Labor Day", "Thanksgiving", "Christmas"]:
+
+        for holiday in [
+            "Memorial Day",
+            "Independence Day",
+            "Labor Day",
+            "Thanksgiving",
+            "Christmas",
+        ]:
             count = holiday_counts[share].get(holiday, 0)
             assert count == expected_holidays, (
                 f"Share {share} has {count} {holiday} weeks, "
                 f"expected {expected_holidays} over {num_years} years"
             )
             print(f"  {share} {holiday}: {count} (expected {expected_holidays})")
+
+    # Print spacing distribution
+    print("\nDistribution of weeks between 10% share weeks:")
+    for spacing in sorted(spacing_counts.keys(), reverse=True):
+        print(f"{spacing} weeks: {spacing_counts[spacing]}")
+
+
+def show_year_offsets(num_years=20):
+    print("\nYear Offsets:")
+    print("Year\tOffset")
+    print("-" * 16)
+    for year in range(2025, 2025 + num_years):
+        house_year = HouseYear(year)
+        offset = house_year.year_offset()
+        print(f"{year}\t{offset}")
 
 
 if __name__ == "__main__":
@@ -650,3 +695,4 @@ if __name__ == "__main__":
     # house_year.compute_all()
 
     test_next_n_years(20)
+    show_year_offsets(20)
