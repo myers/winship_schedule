@@ -61,7 +61,14 @@ def export_to_excel(start_year, end_year, filename):
             row = iso_week - 9 + 1  # +1 because row 1 is the header, -9 to adjust for skipped weeks
             cell = ws.cell(row=row, column=column)
             share_name = winship_schedule.share_name_to_name(week.share)
-            cell.value = share_name
+            
+            # Add emoji if it's a holiday week
+            if week.holiday:
+                emoji = take2.holiday_to_emoji(week.holiday)
+                cell.value = f"{share_name} {emoji}"
+            else:
+                cell.value = share_name
+                
             bg_color, font_color = get_colors(week.share)
             cell.fill = PatternFill(start_color=bg_color, end_color=bg_color, fill_type="solid")
             cell.font = Font(color=font_color)
@@ -90,4 +97,5 @@ def export_to_excel(start_year, end_year, filename):
     wb.save(filename)
 
 if __name__ == "__main__":
-    export_to_excel(2025, 2025, "winship_schedule_2025_2075.xlsx")
+    end_year = 2025 + 20
+    export_to_excel(2025, end_year, f"winship_schedule_2025_{end_year}.xlsx")
