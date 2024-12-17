@@ -67,31 +67,59 @@ shares_pairs = [
     ("david", "hugh"),
 ]
 
-
-holiday_shares = [
-    # hot/cold weeks on even years, warm/cool weeks on odd years
-    "frank_may",
-    "jim",
-    "hankey",
-    "myers",
-    "eddie",
-    "jordan",
-    "richard",
-    "david",
-    "frank_latimer",
-    "becca",
-    # hot/cold weeks on odd years, warm/cool weeks on even years
-    "frank_may",
-    "lane",
-    "hankey",
-    "joe",
-    "eddie",
-    "hayley",
-    "richard",
-    "hugh",
-    "frank_latimer",
-    "will",
+odd_holiday_shares = [
+    [
+        "frank_may",
+        "jim",
+        "hankey",
+        "myers",
+        "eddie",
+        "jordan",
+        "richard",
+        "david",
+        "frank_latimer",
+        "becca",
+    ],
+    [  
+        "frank_may",
+        "lane",
+        "hankey",
+        "joe",
+        "eddie",
+        "hayley",
+        "richard",
+        "hugh",
+        "frank_latimer",
+        "will",
+    ],
 ]
+even_holiday_shares = [
+    [
+        "richard",
+        "lane",
+        "frank_latimer",
+        "joe",
+        "frank_may",
+        "hayley",
+        "hankey",
+        "hugh",
+        "eddie",
+        "will",
+    ],
+    [
+        "richard",
+        "jim",
+        "frank_latimer",
+        "myers",
+        "frank_may",
+        "jordan",
+        "hankey",
+        "david",
+        "eddie",
+        "becca",
+    ],
+]
+
 
 def holiday_to_emoji(holiday):
     holiday_emojis = {
@@ -100,9 +128,10 @@ def holiday_to_emoji(holiday):
         "Labor Day": "👷",
         "Thanksgiving": "🦃",
         "Christmas": "🎄",
-        "Tate Annual": "🐻"
+        "Tate Annual": "🐻",
     }
     return holiday_emojis.get(holiday, "")
+
 
 class AllocatedWeek:
     def __init__(self, start, kind, end=None, holiday=None, share=None):
@@ -114,33 +143,6 @@ class AllocatedWeek:
 
     def __repr__(self):
         return f"AllocatedWeek(start={self.start}, end={self.end}, share={self.share}, kind={self.kind}, holiday={self.holiday})"
-
-
-# def alternating_shares_generator():
-#     alternating_shares = []
-#     five_percent_index = 0
-#     ten_percent_index = 0
-
-#     while True:
-#       alternating_shares.append(ten_precent_shares[ten_percent_index])
-#       ten_percent_index += 1
-#       if ten_percent_index >= len(ten_precent_shares):
-#           ten_percent_index = 0
-#       alternating_shares.extend(five_percent_shares[five_percent_index:five_percent_index])
-#       five_percent_index += 1
-#       if five_percent_index >= len(five_percent_shares):
-#           break
-
-#     #assert ten_percent_index == len(ten_precent_shares)
-#     #assert five_percent_index == len(five_percent_shares), f"five_percent_index: {five_percent_index}"
-#     # # Add remaining entries if any
-#     # if ten_percent_index < len(ten_precent_shares):
-#     #     alternating_shares.extend(ten_precent_shares[ten_percent_index:])
-#     # if five_percent_index < len(five_percent_shares):
-#     #     alternating_shares.extend(five_percent_shares[five_percent_index:])
-#     return alternating_shares
-
-# alternating_shares = alternating_shares_generator()
 
 
 def rotate_list(lst, n):
@@ -184,20 +186,28 @@ class HouseYear:
     def __init__(self, year, debug=False):
         self.year = year
         self.debug = debug
-        year_offset = self.year_offset()
-        if self.debug:
-            print(f"year_offset: {year_offset}")
-        self.rotated_shares = rotate_list(holiday_shares, year_offset)
+        self.rotated_shares = self.get_holiday_shares()
         if self.debug:
             print(f"rotated_shares: {self.rotated_shares}")
         self.weeks = []
 
+    def get_holiday_shares(self):
+        year_offset = self.year_offset()
+        if self.debug:
+            print(f"year_offset: {year_offset}")
+        if self.year % 2 == 0:
+            return rotate_list(even_holiday_shares[0], year_offset) + rotate_list(
+                even_holiday_shares[1], year_offset
+            )
+        else:
+            return rotate_list(odd_holiday_shares[0], year_offset) + rotate_list(
+                odd_holiday_shares[1], year_offset
+            )
+            #return rotate_list(odd_holiday_shares[0] + odd_holiday_shares[1], year_offset)
+
+
     def year_offset(self):
-        base_offset = self.year - 2025
-        if self.year % 2 == 0:  # even years
-            return 10 + base_offset
-        else:  # odd years
-            return base_offset
+        return (self.year - 2025) // 2 * 7
 
     def compute_schedule(self):
         self.weeks.append(AllocatedWeek(early_cold_weeks_start(self.year), "cold"))
@@ -510,36 +520,40 @@ class HouseYear:
         self.compute_initial_shares()
         self.compute_remaining_five_percent_shares()
 
-
 def test_next_n_years(num_years=20):
     holiday_counts = {}
     kind_counts = {}
     total_holidays = 0
     previous_year_kinds = {}  # Track previous year's kinds for each 5% share
-    
+
     for year in range(2025, 2025 + num_years):
         try:
             house_year = HouseYear(year, debug=False)
             house_year.compute_all()
             house_year.assert_share_count()
-            
+
             # Track kinds for each 5% share this year
             current_year_kinds = {}
             for share in five_percent_shares:
                 current_year_kinds[share] = set()
-            
+
             # Count holidays and kinds for each share
             for week in house_year.weeks:
                 # Count kinds
                 if week.share:
                     if week.share not in kind_counts:
-                        kind_counts[week.share] = {'hot': 0, 'warm': 0, 'cool': 0, 'cold': 0}
+                        kind_counts[week.share] = {
+                            "hot": 0,
+                            "warm": 0,
+                            "cool": 0,
+                            "cold": 0,
+                        }
                     kind_counts[week.share][week.kind] += 1
-                    
+
                     # Track kinds for 5% shares
                     if week.share in five_percent_shares:
                         current_year_kinds[week.share].add(week.kind)
-                
+
                 # Count holidays
                 if week.holiday and week.holiday != "Tate Annual":
                     total_holidays += 1
@@ -548,31 +562,33 @@ def test_next_n_years(num_years=20):
                     if week.holiday not in holiday_counts[week.share]:
                         holiday_counts[week.share][week.holiday] = 0
                     holiday_counts[week.share][week.holiday] += 1
-            
-            # Check alternating pattern for 5% shares
+
+            # # Check alternating pattern for 5% shares
             # if year > 2025:  # Skip first year as we need previous year to compare
             #     for share in five_percent_shares:
             #         if share in previous_year_kinds:
             #             prev_kinds = previous_year_kinds[share]
             #             curr_kinds = current_year_kinds[share]
-                        
+
             #             # If last year was hot/cold, this year should be warm/cool
-            #             if {'hot', 'cold'}.issubset(prev_kinds):
-            #                 assert {'warm', 'cool'}.issubset(curr_kinds), \
-            #                     f"Share {share} in year {year} has {curr_kinds} after having hot/cold in previous year"
-                        
+            #             if {"hot", "cold"}.issubset(prev_kinds):
+            #                 assert {"warm", "cool"}.issubset(
+            #                     curr_kinds
+            #                 ), f"Share {share} in year {year} has {curr_kinds} after having hot/cold in previous year"
+
             #             # If last year was warm/cool, this year should be hot/cold
-            #             if {'warm', 'cool'}.issubset(prev_kinds):
-            #                 assert {'hot', 'cold'}.issubset(curr_kinds), \
-            #                     f"Share {share} in year {year} has {curr_kinds} after having warm/cool in previous year"
-            
+            #             if {"warm", "cool"}.issubset(prev_kinds):
+            #                 assert {"hot", "cold"}.issubset(
+            #                     curr_kinds
+            #                 ), f"Share {share} in year {year} has {curr_kinds} after having warm/cool in previous year"
+
             # Store current year's kinds for next iteration
             previous_year_kinds = current_year_kinds
-                    
+
         except Exception as e:
             print(f"Error in year {year}: {e}")
             raise e
-    
+
     # Print the results
     print(f"\nDistribution over {num_years} years (Total holidays: {total_holidays}):")
     for share in sorted(holiday_counts.keys()):
@@ -581,9 +597,26 @@ def test_next_n_years(num_years=20):
         for holiday in sorted(holiday_counts[share].keys()):
             print(f"    {holiday}: {holiday_counts[share][holiday]}")
         print("  Week types:")
-        for kind in ['hot', 'warm', 'cool', 'cold']:
+        for kind in ["hot", "warm", "cool", "cold"]:
             count = kind_counts[share][kind]
             print(f"    {kind}: {count}")
+
+    # After the main results printing, add holiday verification
+    print("\nVerifying holiday distribution:")
+    for share in sorted(holiday_counts.keys()):
+        if share == 'everyone':  # Skip the everyone share
+            continue
+            
+        is_ten_percent = share in ten_precent_shares
+        expected_holidays = 2 if is_ten_percent else 1
+        
+        for holiday in ["Memorial Day", "Independence Day", "Labor Day", "Thanksgiving", "Christmas"]:
+            count = holiday_counts[share].get(holiday, 0)
+            assert count == expected_holidays, (
+                f"Share {share} has {count} {holiday} weeks, "
+                f"expected {expected_holidays} over {num_years} years"
+            )
+            print(f"  {share} {holiday}: {count} (expected {expected_holidays})")
 
 
 if __name__ == "__main__":
