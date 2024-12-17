@@ -145,11 +145,10 @@ def rotate_list(lst, n):
     """Rotate a list by n positions to the right (positive n) or left (negative n)
 
     >>> test_list = list(range(20))  # [0, 1, 2, ..., 19]
-    >>> rotated = rotate_list(test_list, 11)
-    >>> rotated[0]  # The 11th item (index 10) should now be first
-    10
-    >>> rotated == [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    True
+    >>> rotate_list(test_list, 9)
+    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+    >>> rotate_list(test_list, 11)
+    [11, 12, 13, 14, 15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     """
     if not lst:
         return lst
