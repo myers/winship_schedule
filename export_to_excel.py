@@ -27,7 +27,7 @@ def get_colors(share):
         'jim': ('17A43F', 'FFFFFF'),
         'joe': ('C2FFC0', '000000'),
         'myers': ('FC4C06', 'FFFFFF'),
-        'lane': ('FFFF09', '000000'),
+        'lane': ('ead203', '000000'),
         'hayley': ('AF2488', 'FFFFFF'),
         'jordan': ('5483FF', '000000'),
         'richard': ('A56193', 'FFFFFF'),
