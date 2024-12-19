@@ -110,13 +110,13 @@ even_holiday_shares = [
         "richard",
         "jim",
         "frank_latimer",
-        "myers",
+        "becca",
         "frank_may",
         "david",
         "hankey",
         "jordan",
         "eddie",
-        "becca",
+        "myers",
     ],
 ]
 
@@ -135,10 +135,15 @@ def holiday_to_emoji(holiday):
 
 class AllocatedWeek:
     def __init__(self, start, kind, end=None, holiday=None, share=None):
+        # datetime.date this starts
         self.start = start
+        # datetime.date this ends
         self.end = end
+        # this could be "hot", "warm", "cool", "cold"
         self.kind = kind
+        # name of the holiday, None if not a holiday
         self.holiday = holiday
+        # name of the person this belongs to
         self.share = share
 
     def __repr__(self):
@@ -520,138 +525,151 @@ class HouseYear:
         self.compute_remaining_five_percent_shares()
 
 
-def test_next_n_years(num_years=20):
+def generate_schedule(year, debug=False):
+    """Generate a single year's schedule and return it"""
+    house_year = HouseYear(year, debug=debug)
+    house_year.compute_all()
+    house_year.assert_share_count()
+    return house_year
+
+def generate_multi_year_schedule(start_year=2025, num_years=20):
+    """Generate a list of schedules for multiple years"""
+    schedules = []
+    for year in range(start_year, start_year + num_years):
+        try:
+            schedule = generate_schedule(year)
+            schedules.append(schedule)
+        except Exception as e:
+            print(f"Error in year {year}: {e}")
+            raise e
+    return schedules
+
+def test_schedule(schedules):
+    """Test a multi-year schedule for validity"""
     holiday_counts = {}
     kind_counts = {}
     total_holidays = 0
     previous_year_kinds = {}
-    spacing_counts = {}  # New dictionary to track spacing distribution
+    spacing_counts = {}
+    week_index_counts = {}
 
-    for year in range(2025, 2025 + num_years):
-        try:
-            house_year = HouseYear(year, debug=False)
-            house_year.compute_all()
-            house_year.assert_share_count()
+    for house_year in schedules:
+        year = house_year.year
+        
+        # Track week index distribution
+        for index, week in enumerate(house_year.weeks):
+            if week.share and week.share != "everyone":
+                if week.share not in week_index_counts:
+                    week_index_counts[week.share] = {}
+                week_index_counts[week.share][index] = week_index_counts[week.share].get(index, 0) + 1
 
-            # Add spacing verification for 10% shares
-            for share in ten_precent_shares:
-                share_weeks = [
-                    i
-                    for i, week in enumerate(house_year.weeks)
-                    if week.share == share and week.holiday != "Tate Annual"
-                ]
 
-                for i in range(len(share_weeks)):
-                    next_idx = (i + 1) % len(share_weeks)
-                    spacing = (share_weeks[next_idx] - share_weeks[i]) % len(
-                        house_year.weeks
-                    )
+        # Track kinds for 5% shares
+        current_year_kinds = {share: set() for share in five_percent_shares}
 
-                    # Track spacing distribution
-                    spacing_counts[spacing] = spacing_counts.get(spacing, 0) + 1
+        # Count holidays and kinds
+        for week in house_year.weeks:
+            if week.share:
+                if week.share not in kind_counts:
+                    kind_counts[week.share] = {"hot": 0, "warm": 0, "cool": 0, "cold": 0}
+                kind_counts[week.share][week.kind] += 1
 
-                    assert spacing >= 8, (
-                        f"Year {year}: Share {share} has weeks too close together. "
-                        f"Weeks at indices {share_weeks[i]} and {share_weeks[next_idx]} "
-                        f"are only {spacing} weeks apart"
-                    )
+                if week.share in five_percent_shares:
+                    current_year_kinds[week.share].add(week.kind)
 
-            # Track kinds for each 5% share this year
-            current_year_kinds = {}
+            if week.holiday and week.holiday != "Tate Annual":
+                total_holidays += 1
+                if week.share not in holiday_counts:
+                    holiday_counts[week.share] = {}
+                if week.holiday not in holiday_counts[week.share]:
+                    holiday_counts[week.share][week.holiday] = 0
+                holiday_counts[week.share][week.holiday] += 1
+
+        # Check alternating pattern for 5% shares
+        if previous_year_kinds:
             for share in five_percent_shares:
-                current_year_kinds[share] = set()
+                if share in previous_year_kinds:
+                    prev_kinds = previous_year_kinds[share]
+                    curr_kinds = current_year_kinds[share]
 
-            # Count holidays and kinds for each share
-            for week in house_year.weeks:
-                # Count kinds
-                if week.share:
-                    if week.share not in kind_counts:
-                        kind_counts[week.share] = {
-                            "hot": 0,
-                            "warm": 0,
-                            "cool": 0,
-                            "cold": 0,
-                        }
-                    kind_counts[week.share][week.kind] += 1
+                    if {"hot", "cold"}.issubset(prev_kinds):
+                        assert {"warm", "cool"}.issubset(curr_kinds), \
+                            f"Share {share} in year {year} has {curr_kinds} after having hot/cold in previous year"
 
-                    # Track kinds for 5% shares
-                    if week.share in five_percent_shares:
-                        current_year_kinds[week.share].add(week.kind)
+                    if {"warm", "cool"}.issubset(prev_kinds):
+                        assert {"hot", "cold"}.issubset(curr_kinds), \
+                            f"Share {share} in year {year} has {curr_kinds} after having warm/cool in previous year"
 
-                # Count holidays
-                if week.holiday and week.holiday != "Tate Annual":
-                    total_holidays += 1
-                    if week.share not in holiday_counts:
-                        holiday_counts[week.share] = {}
-                    if week.holiday not in holiday_counts[week.share]:
-                        holiday_counts[week.share][week.holiday] = 0
-                    holiday_counts[week.share][week.holiday] += 1
+        # Verify spacing for 10% shares
+        for share in ten_precent_shares:
+            share_weeks = [
+                i for i, week in enumerate(house_year.weeks)
+                if week.share == share and week.holiday != "Tate Annual"
+            ]
 
-            # # Check alternating pattern for 5% shares
-            # if year > 2025:  # Skip first year as we need previous year to compare
-            #     for share in five_percent_shares:
-            #         if share in previous_year_kinds:
-            #             prev_kinds = previous_year_kinds[share]
-            #             curr_kinds = current_year_kinds[share]
+            for i in range(len(share_weeks)):
+                next_idx = (i + 1) % len(share_weeks)
+                spacing = (share_weeks[next_idx] - share_weeks[i]) % len(house_year.weeks)
+                spacing_counts[spacing] = spacing_counts.get(spacing, 0) + 1
+                
+                assert spacing >= 8, (
+                    f"Year {year}: Share {share} has weeks too close together. "
+                    f"Weeks at indices {share_weeks[i]} and {share_weeks[next_idx]} "
+                    f"are only {spacing} weeks apart"
+                )
+        previous_year_kinds = current_year_kinds
 
-            #             # If last year was hot/cold, this year should be warm/cool
-            #             if {"hot", "cold"}.issubset(prev_kinds):
-            #                 assert {"warm", "cool"}.issubset(
-            #                     curr_kinds
-            #                 ), f"Share {share} in year {year} has {curr_kinds} after having hot/cold in previous year"
+    return {
+        'holiday_counts': holiday_counts,
+        'kind_counts': kind_counts,
+        'total_holidays': total_holidays,
+        'spacing_counts': spacing_counts,
+        'week_index_counts': week_index_counts
+    }
 
-            #             # If last year was warm/cool, this year should be hot/cold
-            #             if {"warm", "cool"}.issubset(prev_kinds):
-            #                 assert {"hot", "cold"}.issubset(
-            #                     curr_kinds
-            #                 ), f"Share {share} in year {year} has {curr_kinds} after having warm/cool in previous year"
-
-            # Store current year's kinds for next iteration
-            previous_year_kinds = current_year_kinds
-
-        except Exception as e:
-            print(f"Error in year {year}: {e}")
-            raise e
-
-    # Print the results
-    print(f"\nDistribution over {num_years} years (Total holidays: {total_holidays}):")
-    for share in sorted(holiday_counts.keys()):
-        print(f"\n{share}:")
-        print("  Holidays:")
-        for holiday in sorted(holiday_counts[share].keys()):
-            print(f"    {holiday}: {holiday_counts[share][holiday]}")
-        print("  Week types:")
-        for kind in ["hot", "warm", "cool", "cold"]:
-            count = kind_counts[share][kind]
-            print(f"    {kind}: {count}")
-
-    # After the main results printing, add holiday verification
-    print("\nVerifying holiday distribution:")
-    for share in sorted(holiday_counts.keys()):
-        if share == "everyone":  # Skip the everyone share
-            continue
-
-        is_ten_percent = share in ten_precent_shares
-        expected_holidays = 2 if is_ten_percent else 1
-
-        for holiday in [
-            "Memorial Day",
-            "Independence Day",
-            "Labor Day",
-            "Thanksgiving",
-            "Christmas",
-        ]:
-            count = holiday_counts[share].get(holiday, 0)
-            assert count == expected_holidays, (
-                f"Share {share} has {count} {holiday} weeks, "
-                f"expected {expected_holidays} over {num_years} years"
-            )
-            print(f"  {share} {holiday}: {count} (expected {expected_holidays})")
-
-    # Print spacing distribution
-    print("\nDistribution of weeks between 10% share weeks:")
-    for spacing in sorted(spacing_counts.keys(), reverse=True):
-        print(f"{spacing} weeks: {spacing_counts[spacing]}")
+def test_schedule_results(schedule):
+    """Main function to generate and test schedules"""
+    results = test_schedule(schedule)
+    num_years = len(schedule)
+    print(f"\nDistribution over {num_years} years (Total holidays: {results['total_holidays']}):")
+    
+    # Print holiday distribution
+    print("\nHoliday Distribution:")
+    print("-" * 60)
+    for share, holidays in results['holiday_counts'].items():
+        if share:  # Skip None/empty shares
+            print(f"{share}:")
+            for holiday, count in holidays.items():
+                emoji = holiday_to_emoji(holiday)
+                print(f"  {emoji} {holiday}: {count}")
+    
+    # Print season distribution
+    print("\nSeason Distribution:")
+    print("-" * 60)
+    for share, kinds in results['kind_counts'].items():
+        if share and share != "everyone":  # Skip None/empty/everyone shares
+            print(f"{share}:")
+            for kind, count in kinds.items():
+                print(f"  {kind}: {count}")
+    
+    # Print spacing statistics for 10% shares
+    print("\nWeek Spacing Distribution (10% shares):")
+    print("-" * 60)
+    for spacing, count in sorted(results['spacing_counts'].items()):
+        print(f"Spacing of {spacing} weeks: {count} occurrences")
+    
+    # Print week index distribution with unallocated weeks
+    print("\nWeek Index Distribution:")
+    print("-" * 60)
+    total_weeks = len(schedule[0].weeks)  # Get number of weeks from first year
+    
+    for share, indices in results['week_index_counts'].items():
+        if share and share != "everyone":  # Skip None/empty/everyone shares
+            print(f"\n{share}:")
+            for index in range(total_weeks):  # Iterate through all possible week indices
+                count = indices.get(index, 0)
+                status = "unallocated" if count == 0 else f"{count} times"
+                print(f"  Week {index}: {status}")
 
 
 def show_year_offsets(num_years=20):
@@ -694,5 +712,6 @@ if __name__ == "__main__":
     # house_year = HouseYear(2026, debug=True)
     # house_year.compute_all()
 
-    test_next_n_years(20)
-    show_year_offsets(20)
+    schedule = generate_multi_year_schedule(num_years=20)
+
+    test_schedule_results(schedule)
