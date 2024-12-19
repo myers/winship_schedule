@@ -18,6 +18,32 @@ def count_weeks_by_share(schedule):
                 share_counts[share][w_idx] += 1
     return share_counts
 
+def check_10_percent_spacing(schedule, owner_percent, year_idx):
+    """
+    Check that for all 10% shares in the given year, no two allocated weeks are less than 8 weeks apart.
+    Return True if spacing is valid, False if not.
+    """
+    year = schedule[year_idx]
+    # Gather the weeks allocated to each share
+    share_positions = {}
+    for w_idx, aw in enumerate(year.weeks):
+        if aw.share:
+            s = aw.share
+            if s not in share_positions:
+                share_positions[s] = []
+            share_positions[s].append(w_idx)
+    
+    # For each 10% share, check spacing
+    for s, positions in share_positions.items():
+        if owner_percent.get(s, 0) == 10:
+            # Sort positions and check differences
+            positions.sort()
+            for i in range(len(positions)-1):
+                if positions[i+1] - positions[i] < 8:
+                    # Found two weeks less than 8 apart
+                    return False
+    return True
+
 def rebalance_schedule(schedule, owner_percent):
     """
     Rebalance the schedule so that each share gets closer to the ideal allocation:
@@ -27,9 +53,15 @@ def rebalance_schedule(schedule, owner_percent):
     Constraints:
     - Do not consider holiday weeks for swapping.
     - Only swap weeks of the same kind.
-    - Normally, weeks must not be swapped if they are more than 10 weeks apart.
-    - If a week belongs to a 10% share, that week can only be swapped with another week that is at most 1 week apart in index.
+    - If either share is 10%, can only swap weeks that are ±1 week index apart,
+      otherwise can swap weeks ±10 apart.
+    - May not swap weeks between different years.
+    - After a swap, if a 10% share ends up with two weeks less than 8 weeks apart in that year, the swap is not allowed.
     """
+
+    # Add permanent set of swapped weeks at the start of the function
+    permanently_swapped_weeks = set()
+
     # Determine the ideal distribution for each share
     ideal_allocation = {}
     for share, pct in owner_percent.items():
@@ -39,109 +71,145 @@ def rebalance_schedule(schedule, owner_percent):
             target = 1
         else:
             raise ValueError("Unexpected owner percentage, must be 5 or 10.")
-        
-        # Each share should have a target occurrences per week index
+
         ideal_allocation[share] = {week_idx: target for week_idx in range(40)}
 
-    # Current counts
-    current_counts = count_weeks_by_share(schedule)
-
-    # Compute surplus/deficit for each share and week index
-    surplus_deficit = {}
-    for share in ideal_allocation:
-        surplus_deficit[share] = {}
-        for w_idx in range(40):
-            current = current_counts.get(share, {}).get(w_idx, 0)
-            ideal = ideal_allocation[share][w_idx]
-            surplus_deficit[share][w_idx] = current - ideal
-
-    # We'll do multiple passes attempting to improve distribution
-    from collections import defaultdict
-    kind_map = defaultdict(list)
-    for y_idx, year in enumerate(schedule):
-        for w_idx, aw in enumerate(year.weeks):
-            if aw.holiday is None:
-                kind_map[aw.kind].append((y_idx, w_idx, aw))
+    def allowed_difference(s1, s2):
+        # If either share is 10%, max diff = 1, else 10
+        if owner_percent[s1] == 10 or owner_percent[s2] == 10:
+            return 1
+        return 10
 
     improved = True
     passes = 0
-    max_passes = 200
+    max_passes = 100
 
-    while improved and passes < max_passes:
-        improved = False
-        passes += 1
+    # Process years in reverse order
+    for current_year_idx in range(len(schedule) - 1, -1, -1):
+        improved = True
+        passes = 0
 
-        # Recalculate surplus/deficit
-        current_counts = count_weeks_by_share(schedule)
-        for share in surplus_deficit:
-            for w in range(40):
-                current = current_counts.get(share, {}).get(w, 0)
-                ideal = ideal_allocation[share][w]
-                surplus_deficit[share][w] = current - ideal
+        while improved and passes < max_passes:
+            improved = False
+            passes += 1
 
-        # Create lists of needs and excess
-        share_needs = {}
-        share_excess = {}
-        for share in surplus_deficit:
-            share_needs[share] = [(w, -d) for w, d in surplus_deficit[share].items() if d < 0]
-            share_excess[share] = [(w, d) for w, d in surplus_deficit[share].items() if d > 0]
+            # Calculate current surplus/deficit
+            current_counts = count_weeks_by_share(schedule)
+            surplus_deficit = {}
+            for share in ideal_allocation:
+                surplus_deficit[share] = {}
+                for w_idx in range(40):
+                    current = current_counts.get(share, {}).get(w_idx, 0)
+                    ideal = ideal_allocation[share][w_idx]
+                    surplus_deficit[share][w_idx] = current - ideal
 
-        # Function to determine max allowed week difference based on owners
-        def allowed_difference(share1, share2):
-            # If either share is a 10% owner, max difference = 1
-            if owner_percent[share1] == 10 or owner_percent[share2] == 10:
-                return 1
-            # Otherwise (both are 5%), max difference = 10
-            return 10
+            # Create lists of needs and excess, sorted by magnitude of imbalance
+            share_needs = {}
+            share_excess = {}
+            for share in surplus_deficit:
+                # Sort by deficit amount (largest deficit first)
+                share_needs[share] = sorted(
+                    [(w, -d) for w, d in surplus_deficit[share].items() if d < 0],
+                    key=lambda x: x[1],
+                    reverse=True
+                )
+                # Sort by excess amount (largest excess first)
+                share_excess[share] = sorted(
+                    [(w, d) for w, d in surplus_deficit[share].items() if d > 0],
+                    key=lambda x: x[1],
+                    reverse=True
+                )
 
-        # Attempt swaps
-        for share_ex in surplus_deficit:
-            for (ex_widx, ex_amount) in share_excess[share_ex]:
-                if ex_amount <= 0:
-                    continue
-                # Find candidate weeks that share_ex holds at ex_widx (holiday=None)
-                candidate_weeks_to_give = []
-                for y_idx, year in enumerate(schedule):
-                    aw = year.weeks[ex_widx]
-                    if aw.share == share_ex and aw.holiday is None:
-                        candidate_weeks_to_give.append((y_idx, ex_widx, aw))
+            # Track which weeks have been swapped in this pass
+            swapped_weeks = set()
 
-                for (cy, cwidx, caw) in candidate_weeks_to_give:
-                    kind_key = caw.kind
-                    found_swap = False
-                    # Now find a share that needs a week near cwidx
-                    for share_need in surplus_deficit:
-                        if share_need == share_ex:
-                            continue
-                        # Try deficits for share_need
-                        for (nd_widx, nd_amount) in share_needs[share_need]:
-                            if nd_amount <= 0:
+            # Sort shares by total imbalance to prioritize the most unbalanced shares
+            share_total_imbalance = {
+                share: sum(abs(d) for d in surplus_deficit[share].values())
+                for share in surplus_deficit
+            }
+            sorted_shares = sorted(
+                surplus_deficit.keys(),
+                key=lambda s: share_total_imbalance[s],
+                reverse=True
+            )
+
+            # Attempt swaps - but only within the current year
+            for share_ex in sorted_shares:
+                for (ex_widx, ex_amount) in share_excess[share_ex]:
+                    if ex_amount <= 0:
+                        continue
+                    
+                    # Only look at weeks in the current year
+                    if ex_widx < len(schedule[current_year_idx].weeks):
+                        aw = schedule[current_year_idx].weeks[ex_widx]
+                        if (aw.share == share_ex and 
+                            aw.holiday is None and 
+                            (current_year_idx, ex_widx) not in permanently_swapped_weeks and 
+                            (current_year_idx, ex_widx) not in swapped_weeks):
+                            candidate_weeks_to_give = [(current_year_idx, ex_widx, aw)]
+                        else:
+                            candidate_weeks_to_give = []
+                    else:
+                        candidate_weeks_to_give = []
+
+                    for (cy, cwidx, caw) in candidate_weeks_to_give:
+                        kind_key = caw.kind
+                        found_swap = False
+
+                        for share_need in surplus_deficit:
+                            if share_need == share_ex:
                                 continue
-                            # Check allowed difference
-                            max_diff = allowed_difference(share_ex, share_need)
-                            if abs(cwidx - nd_widx) <= max_diff:
-                                # Find a suitable week from share_need at nd_widx
-                                for y2, year2 in enumerate(schedule):
-                                    aw2 = year2.weeks[nd_widx]
-                                    if aw2.share == share_need and aw2.holiday is None and aw2.kind == kind_key:
-                                        # Potential swap found
-                                        # Perform the swap
-                                        schedule[cy].weeks[cwidx], schedule[y2].weeks[nd_widx] = aw2, caw
-                                        # Update shares
+                            for (nd_widx, nd_amount) in share_needs[share_need]:
+                                if nd_amount <= 0:
+                                    continue
+                                # Only consider swaps within the current year
+                                if (nd_widx >= len(schedule[current_year_idx].weeks) or
+                                    (current_year_idx, nd_widx) in permanently_swapped_weeks or 
+                                    (current_year_idx, nd_widx) in swapped_weeks):
+                                    continue
+                                    
+                                diff_limit = allowed_difference(share_ex, share_need)
+                                if abs(cwidx - nd_widx) <= diff_limit and nd_widx < len(schedule[cy].weeks):
+                                    aw2 = schedule[cy].weeks[nd_widx]
+                                    if (aw2.share == share_need and
+                                        aw2.holiday is None and
+                                        aw2.kind == kind_key):  # ensure same kind
+                                        
+                                        # Temporarily perform the swap in memory
+                                        original_caw = schedule[cy].weeks[cwidx]
+                                        original_aw2 = schedule[cy].weeks[nd_widx]
+                                        
+                                        schedule[cy].weeks[cwidx], schedule[cy].weeks[nd_widx] = aw2, caw
                                         schedule[cy].weeks[cwidx].share = share_need
-                                        schedule[y2].weeks[nd_widx].share = share_ex
+                                        schedule[cy].weeks[nd_widx].share = share_ex
 
-                                        improved = True
-                                        found_swap = True
-                                        break
+                                        # Check the spacing constraint for 10% shares
+                                        if check_10_percent_spacing(schedule, owner_percent, cy):
+                                            # If spacing is good, finalize the swap
+                                            print(f"Swapping within year {cy}:\n  {caw}\n  {aw2}\n")
+                                            improved = True
+                                            found_swap = True
+                                            # Add both weeks to both swap sets
+                                            swapped_weeks.add((cy, cwidx))
+                                            swapped_weeks.add((cy, nd_widx))
+                                            permanently_swapped_weeks.add((cy, cwidx))
+                                            permanently_swapped_weeks.add((cy, nd_widx))
+                                        else:
+                                            # Revert the swap if spacing failed
+                                            schedule[cy].weeks[cwidx], schedule[cy].weeks[nd_widx] = original_caw, original_aw2
+
                                 if found_swap:
                                     break
+                            if found_swap:
+                                break
                         if found_swap:
                             break
-                    if found_swap:
-                        break
-    print(f"Passes: {passes}")
+
+        print(f"Year {current_year_idx}: passes={passes}, improved={improved}")
+
     return schedule
+
 
 
 owner_percent = {
@@ -171,16 +239,18 @@ if __name__ == "__main__":
 
     schedule = []
 
-    for year in range(2025, 2046):
+    for year in range(2025, 2045):
         house_year = take2.HouseYear(year, debug=False)
         house_year.compute_all()
         schedule.append(house_year)
-    pprint.pprint(schedule[0].weeks)
+    assert len(schedule) == 20
+    # pprint.pprint(schedule[0].weeks)
+    # pprint.pprint(count_weeks_by_share(schedule))
 
 
     new_schedule = rebalance_schedule(schedule, owner_percent)
 
-    #pprint.pprint(count_weeks_by_share(new_schedule))
+    # pprint.pprint(count_weeks_by_share(new_schedule))
 
-    pprint.pprint(new_schedule[0].weeks)
+    #pprint.pprint(new_schedule[0].weeks)
     take2.test_schedule_results(new_schedule)
