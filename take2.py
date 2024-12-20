@@ -120,19 +120,6 @@ even_holiday_shares = [
     ],
 ]
 
-
-def holiday_to_emoji(holiday):
-    holiday_emojis = {
-        "Memorial Day": "🎖️",
-        "Independence Day": "🇺🇸",
-        "Labor Day": "👷",
-        "Thanksgiving": "🦃",
-        "Christmas": "🎄",
-        "Tate Annual": "🐻",
-    }
-    return holiday_emojis.get(holiday, "")
-
-
 class AllocatedWeek:
     def __init__(self, start, kind, end=None, holiday=None, share=None):
         # datetime.date this starts
@@ -607,14 +594,13 @@ def test_schedule(schedules):
                 if week.share == share and week.holiday != "Tate Annual"
             ]
 
-            for i in range(len(share_weeks)):
-                next_idx = (i + 1) % len(share_weeks)
-                spacing = (share_weeks[next_idx] - share_weeks[i]) % len(house_year.weeks)
+            for i in range(len(share_weeks) - 1):  # Only check consecutive weeks within the year
+                spacing = share_weeks[i + 1] - share_weeks[i]
                 spacing_counts[spacing] = spacing_counts.get(spacing, 0) + 1
                 
                 assert spacing >= 8, (
                     f"Year {year}: Share {share} has weeks too close together. "
-                    f"Weeks at indices {share_weeks[i]} and {share_weeks[next_idx]} "
+                    f"Weeks at indices {share_weeks[i]} and {share_weeks[i + 1]} "
                     f"are only {spacing} weeks apart"
                 )
         previous_year_kinds = current_year_kinds
@@ -670,6 +656,24 @@ def test_schedule_results(schedule):
                 count = indices.get(index, 0)
                 status = "unallocated" if count == 0 else f"{count} times"
                 print(f"  Week {index}: {status}")
+
+    # After the existing week index distribution section, add:
+    print("\nWeek Index Anomalies:")
+    print("-" * 60)
+    total_anomalies = 0
+    
+    for share, indices in results['week_index_counts'].items():
+        if share and share != "everyone":
+            expected_count = 2 if share in ten_precent_shares else 1
+            anomalies = sum(1 for count in indices.values() if count != expected_count)
+            if anomalies > 0:
+                print(f"{share} (expected {expected_count}/week):")
+                for index, count in indices.items():
+                    if count != expected_count:
+                        print(f"  Week {index}: got {count} instead of {expected_count}")
+                total_anomalies += anomalies
+    
+    print(f"\nTotal anomalies found: {total_anomalies}")
 
 
 def show_year_offsets(num_years=20):

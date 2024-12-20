@@ -35,7 +35,11 @@ def get_colors(share):
     }
     return colors.get(share.split('-')[0], ('FFFFFF', '000000'))
 
-def export_to_excel(start_year, end_year, filename):
+def export_to_excel(filename, schedule):
+    # Determine start and end years from schedule
+    start_year = min(hy.year for hy in schedule)
+    end_year = max(hy.year for hy in schedule)
+    
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Winship House Schedule"
@@ -49,8 +53,11 @@ def export_to_excel(start_year, end_year, filename):
     print(f"start_year: {start_year} end_year: {end_year}")
     for year in range(start_year, end_year + 1):
         print(f"year: {year}")
-        house_year = take2.HouseYear(year)
-        house_year.compute_all()
+        house_year = next((hy for hy in schedule if hy.year == year), None)
+        if not house_year:
+            print(f"Warning: No schedule found for year {year}")
+            continue
+            
         column = year - start_year + 2
         
         for week in house_year.weeks:
@@ -97,5 +104,4 @@ def export_to_excel(start_year, end_year, filename):
     wb.save(filename)
 
 if __name__ == "__main__":
-    end_year = 2025 + 20
-    export_to_excel(2025, end_year, f"winship_schedule_2025_{end_year}.xlsx")
+    export_to_excel("winship_schedule.xlsx", schedule)

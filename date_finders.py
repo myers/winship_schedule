@@ -171,3 +171,14 @@ def sunday_after(dd):
             break
     return dd
 
+
+def holiday_to_emoji(holiday):
+    holiday_emojis = {
+        "Memorial Day": "🎖️",
+        "Independence Day": "🇺🇸",
+        "Labor Day": "👷",
+        "Thanksgiving": "🦃",
+        "Christmas": "🎄",
+        "Tate Annual": "🐻",
+    }
+    return holiday_emojis.get(holiday, "")
