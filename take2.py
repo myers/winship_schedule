@@ -661,17 +661,21 @@ def test_schedule_results(schedule):
     print("\nWeek Index Anomalies:")
     print("-" * 60)
     total_anomalies = 0
+    total_weeks = len(schedule[0].weeks)  # Get number of weeks from first year
     
     for share, indices in results['week_index_counts'].items():
         if share and share != "everyone":
             expected_count = 2 if share in ten_precent_shares else 1
-            anomalies = sum(1 for count in indices.values() if count != expected_count)
-            if anomalies > 0:
-                print(f"{share} (expected {expected_count}/week):")
-                for index, count in indices.items():
-                    if count != expected_count:
-                        print(f"  Week {index}: got {count} instead of {expected_count}")
-                total_anomalies += anomalies
+            # Count anomalies for all possible week indices
+            anomalies = 0
+            for week_index in range(total_weeks):
+                count = indices.get(week_index, 0)  # Use 0 if index not found
+                if count != expected_count:
+                    if anomalies == 0:  # Print header only when first anomaly found
+                        print(f"{share} (expected {expected_count}/week):")
+                    print(f"  Week {week_index}: got {count} instead of {expected_count}")
+                    anomalies += 1
+            total_anomalies += anomalies
     
     print(f"\nTotal anomalies found: {total_anomalies}")
 

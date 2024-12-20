@@ -123,47 +123,6 @@ def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, 
 
     return improved
 
-def try_swap(schedule, s, w_give, w_get, owner_percent):
-    """
-    Try to swap a week of type w_give owned by s with a week of type w_get owned by another share.
-    Constraints:
-    - Same kind
-    - No holiday weeks
-    - Allowed distance depends on share percent
-    - Check spacing for 10% shares
-    - No cross-year swaps
-
-    We'll scan each year, find a candidate (w_give) week owned by s, and a (w_get) week owned by another share in the same year 
-    that meets constraints, then perform the swap if possible.
-    """
-    for y_idx, year in enumerate(schedule):
-        # Find a w_give candidate in this year owned by s
-        if w_give < len(year.weeks):
-            caw = year.weeks[w_give]
-            if caw.share == s and caw.holiday is None:
-                # Need to find w_get in this year, same kind, suitable share
-                if w_get < len(year.weeks):
-                    aw2 = year.weeks[w_get]
-                    if aw2.share != s and aw2.holiday is None and aw2.kind == caw.kind:
-                        # Check distance constraint
-                        diff_limit = allowed_week_difference(s, aw2.share, owner_percent)
-                        if abs(w_give - w_get) <= diff_limit:
-                            # Try swapping
-                            original_caw = year.weeks[w_give]
-                            original_aw2 = year.weeks[w_get]
-                            
-                            year.weeks[w_give], year.weeks[w_get] = aw2, caw
-                            year.weeks[w_give].share = aw2.share
-                            year.weeks[w_get].share = s
-
-                            if check_10_percent_spacing_in_year(year, owner_percent):
-                                # Good swap
-                                print(f"Swapping in year {y_idx}:\n  Index {w_give}: {caw} with Index {w_get}: {aw2}\n")
-                                return True
-                            else:
-                                # revert
-                                year.weeks[w_give], year.weeks[w_get] = original_caw, original_aw2
-    return False
 
 def rebalance_global(schedule, owner_percent):
     ideal_allocation = compute_ideal_allocation(owner_percent)
@@ -234,30 +193,40 @@ def try_swap(schedule, s, w_give, w_get, owner_percent, recent_swaps):
         if w_give < len(year.weeks) and w_get < len(year.weeks):
             caw = year.weeks[w_give]
             aw2 = year.weeks[w_get]
-            if caw.share == s and caw.holiday is None and aw2.share != s and aw2.holiday is None and aw2.kind == caw.kind:
+            if (caw.share == s and caw.holiday is None and
+                aw2.share != s and aw2.holiday is None and
+                aw2.kind == caw.kind):
+                
                 diff_limit = allowed_week_difference(s, aw2.share, owner_percent)
                 if abs(w_give - w_get) <= diff_limit:
                     # Check if we recently did this swap (or its inverse)
                     swap_key = (y_idx, w_give, w_get, caw.share, aw2.share)
                     inverse_swap_key = (y_idx, w_get, w_give, aw2.share, caw.share)
                     if swap_key in recent_swaps or inverse_swap_key in recent_swaps:
-                        # We already tried this swap recently, skip it
+                        # Already tried this swap recently
                         continue
 
-                    original_caw = year.weeks[w_give]
-                    original_aw2 = year.weeks[w_get]
-                    year.weeks[w_give], year.weeks[w_get] = aw2, caw
+                    # Only swap the share attributes
+                    original_share_give = year.weeks[w_give].share
+                    original_share_get = year.weeks[w_get].share
+
+                    # Perform the share swap
                     year.weeks[w_give].share = aw2.share
                     year.weeks[w_get].share = s
 
+                    # Check spacing for 10% shares
                     if check_10_percent_spacing_in_year(year, owner_percent):
-                        print(f"Swapping in year {y_idx}:\n  Index {w_give}: {caw} with Index {w_get}: {aw2}\n")
+                        print(f"Swapping shares in year {y_idx}:\n"
+                              f"  Week {w_give}: {caw} now owned by {aw2.share}\n"
+                              f"  Week {w_get}: {aw2} now owned by {s}\n")
+                        
                         # Record this swap so we don't undo it immediately
                         recent_swaps.add(swap_key)
                         return True
                     else:
-                        # revert
-                        year.weeks[w_give], year.weeks[w_get] = original_caw, original_aw2
+                        # Revert if spacing check fails
+                        year.weeks[w_give].share = original_share_give
+                        year.weeks[w_get].share = original_share_get
     return False
 
 # Example usage:
@@ -308,5 +277,6 @@ if __name__ == "__main__":
     #pprint.pprint(new_schedule[0].weeks)
     take2.test_schedule_results(new_schedule)
 
-    # import export_to_excel
-    # export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced.xlsx", new_schedule)
+    pprint.pprint(new_schedule[0].weeks)
+    import export_to_excel
+    export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced.xlsx", new_schedule)

@@ -4,7 +4,7 @@ import openpyxl
 from openpyxl.styles import PatternFill, Font
 from openpyxl.utils import get_column_letter
 from openpyxl.comments import Comment
-import take2
+from date_finders import holiday_to_emoji
 import winship_schedule
 from datetime import timedelta
 
@@ -71,7 +71,7 @@ def export_to_excel(filename, schedule):
             
             # Add emoji if it's a holiday week
             if week.holiday:
-                emoji = take2.holiday_to_emoji(week.holiday)
+                emoji = holiday_to_emoji(week.holiday)
                 cell.value = f"{share_name} {emoji}"
             else:
                 cell.value = share_name
