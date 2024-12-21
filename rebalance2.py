@@ -281,5 +281,6 @@ if __name__ == "__main__":
     #pprint.pprint(new_schedule[0].weeks)
     take2.test_schedule_results(new_schedule)
 
+    pprint.pprint(new_schedule[0].weeks)
     import export_to_excel
-    export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced.xlsx", new_schedule)
+    export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced2.xlsx", new_schedule)

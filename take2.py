@@ -81,9 +81,9 @@ odd_holiday_shares = [
         "becca",
     ],
     [
-        "frank_may",
-        "lane",
         "hankey",
+        "lane",
+        "frank_may",
         "joe",
         "eddie",
         "hayley",

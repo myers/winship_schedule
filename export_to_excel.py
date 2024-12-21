@@ -52,7 +52,7 @@ def export_to_excel(filename, schedule):
     # Fill in the schedule
     print(f"start_year: {start_year} end_year: {end_year}")
     for year in range(start_year, end_year + 1):
-        print(f"year: {year}")
+        #print(f"year: {year}")
         house_year = next((hy for hy in schedule if hy.year == year), None)
         if not house_year:
             print(f"Warning: No schedule found for year {year}")
@@ -61,7 +61,7 @@ def export_to_excel(filename, schedule):
         column = year - start_year + 2
         
         for week in house_year.weeks:
-            print(f"week: {week.start} {week.end} {week.kind} {week.share}")
+            #print(f"week: {week.start} {week.end} {week.kind} {week.share}")
             iso_week = get_iso_week(week.start)
             if iso_week <= 9:
                 continue  # Skip the first 9 weeks
