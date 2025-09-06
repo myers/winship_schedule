@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+import datetime
+
+import take2
+from date_finders import holiday_to_emoji
+
 
 def count_weeks_by_share_global(schedule):
     """
@@ -17,6 +22,7 @@ def count_weeks_by_share_global(schedule):
                 share_counts[share][w_idx] += 1
     return share_counts
 
+
 def check_10_percent_spacing_in_year(year, owner_percent):
     """
     Check that for all 10% shares in this year, no two allocated weeks are less than 8 weeks apart.
@@ -29,20 +35,22 @@ def check_10_percent_spacing_in_year(year, owner_percent):
             if s not in share_positions:
                 share_positions[s] = []
             share_positions[s].append(w_idx)
-    
+
     for s, positions in share_positions.items():
         if owner_percent.get(s, 0) == 10:
             positions.sort()
-            for i in range(len(positions)-1):
-                if positions[i+1] - positions[i] < 8:
+            for i in range(len(positions) - 1):
+                if positions[i + 1] - positions[i] < 8:
                     return False
     return True
+
 
 def allowed_week_difference(s1, s2, owner_percent):
     # If either share is 10%, max diff = 1, else 10
     if owner_percent[s1] == 10 or owner_percent[s2] == 10:
         return 1
     return 10
+
 
 def compute_ideal_allocation(owner_percent):
     ideal_allocation = {}
@@ -59,9 +67,10 @@ def compute_ideal_allocation(owner_percent):
         ideal_allocation[share] = {w: target for w in range(40)}
     return ideal_allocation
 
+
 def find_global_imbalance(surplus_deficit):
     """
-    Given surplus_deficit {share: {week_index: diff}}, find a list of (share, week_index, diff) 
+    Given surplus_deficit {share: {week_index: diff}}, find a list of (share, week_index, diff)
     sorted by the magnitude of imbalance.
     """
     imbalances = []
@@ -73,18 +82,21 @@ def find_global_imbalance(surplus_deficit):
     imbalances.sort(key=lambda x: abs(x[2]), reverse=True)
     return imbalances
 
-def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, s, w_idx, diff, ideal_allocation):
+
+def attempt_swap_for_global_imbalance(
+    schedule, owner_percent, surplus_deficit, s, w_idx, diff, ideal_allocation
+):
     """
     Attempt to reduce global imbalance for share s at week index w_idx.
-    If diff > 0, share s has surplus of w_idx; try to swap out one occurrence of w_idx 
+    If diff > 0, share s has surplus of w_idx; try to swap out one occurrence of w_idx
     for a needed week index where s has deficit.
-    If diff < 0, share s has deficit of w_idx; try to swap in one occurrence of w_idx 
+    If diff < 0, share s has deficit of w_idx; try to swap in one occurrence of w_idx
     from another share, giving them something s has in surplus.
 
     We'll try a simple approach:
-    - If diff > 0 (surplus), find a week index w_need where s has deficit, and try to swap a week w_idx (owned by s) 
+    - If diff > 0 (surplus), find a week index w_need where s has deficit, and try to swap a week w_idx (owned by s)
       with a week w_need (owned by another share) in the same year.
-    - If diff < 0 (deficit), similarly try the reverse: we want to bring in a w_idx from another share and give them 
+    - If diff < 0 (deficit), similarly try the reverse: we want to bring in a w_idx from another share and give them
       something s has in surplus.
 
     Return True if a swap was made, False otherwise.
@@ -103,7 +115,7 @@ def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, 
             return False
         # Sort deficits by largest deficit
         s_deficit.sort(key=lambda x: x[1], reverse=True)
-        for (w_need, needed_amount) in s_deficit:
+        for w_need, needed_amount in s_deficit:
             if needed_amount <= 0:
                 continue
             # Try to swap one instance of w_idx (s owns) with one instance of w_need (other share owns)
@@ -113,7 +125,7 @@ def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, 
     else:
         # diff < 0, s has deficit at w_idx, try to find a w_have from s_surplus
         s_surplus.sort(key=lambda x: x[1], reverse=True)
-        for (w_have, have_amount) in s_surplus:
+        for w_have, have_amount in s_surplus:
             if have_amount <= 0:
                 continue
             # Try to swap one instance of w_have (s owns) with one instance of w_idx (other share owns)
@@ -152,27 +164,46 @@ def rebalance_global(schedule, owner_percent):
             # Perfect distribution globally
             break
 
-        for (s, w_idx, diff) in imbalances:
+        for s, w_idx, diff in imbalances:
             if diff == 0:
                 continue
 
             # Attempt to fix this imbalance
             # Modify attempt_swap_for_global_imbalance to take recent_swaps as a parameter
-            if attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, s, w_idx, diff, ideal_allocation, recent_swaps):
+            if attempt_swap_for_global_imbalance(
+                schedule,
+                owner_percent,
+                surplus_deficit,
+                s,
+                w_idx,
+                diff,
+                ideal_allocation,
+                recent_swaps,
+            ):
                 improved = True
                 # Break to re-check surpluses after a single improvement
                 break
 
     return schedule
 
-def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, s, w_idx, diff, ideal_allocation, recent_swaps):
+
+def attempt_swap_for_global_imbalance(
+    schedule,
+    owner_percent,
+    surplus_deficit,
+    s,
+    w_idx,
+    diff,
+    ideal_allocation,
+    recent_swaps,
+):
     s_deficit = [(w, -d) for w, d in surplus_deficit[s].items() if d < 0]
     s_surplus = [(w, d) for w, d in surplus_deficit[s].items() if d > 0]
 
     if diff > 0:
         # Surplus at w_idx, need a deficit
         s_deficit.sort(key=lambda x: x[1], reverse=True)
-        for (w_need, needed_amount) in s_deficit:
+        for w_need, needed_amount in s_deficit:
             if needed_amount <= 0:
                 continue
             if try_swap(schedule, s, w_idx, w_need, owner_percent, recent_swaps):
@@ -180,7 +211,7 @@ def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, 
     else:
         # Deficit at w_idx, need a surplus
         s_surplus.sort(key=lambda x: x[1], reverse=True)
-        for (w_have, have_amount) in s_surplus:
+        for w_have, have_amount in s_surplus:
             if have_amount <= 0:
                 continue
             if try_swap(schedule, s, w_have, w_idx, owner_percent, recent_swaps):
@@ -188,14 +219,19 @@ def attempt_swap_for_global_imbalance(schedule, owner_percent, surplus_deficit, 
 
     return False
 
+
 def try_swap(schedule, s, w_give, w_get, owner_percent, recent_swaps):
     for y_idx, year in enumerate(schedule):
         if w_give < len(year.weeks) and w_get < len(year.weeks):
             caw = year.weeks[w_give]
             aw2 = year.weeks[w_get]
-            if (caw.share == s and caw.holiday is None and
-                aw2.share != s and aw2.holiday is None and
-                aw2.kind == caw.kind):
+            if (
+                caw.share == s
+                and caw.holiday is None
+                and aw2.share != s
+                and aw2.holiday is None
+                and aw2.kind == caw.kind
+            ):
 
                 # Compute circular difference
                 raw_diff = abs(w_give - w_get)
@@ -220,9 +256,11 @@ def try_swap(schedule, s, w_give, w_get, owner_percent, recent_swaps):
 
                     # Check spacing for 10% shares
                     if check_10_percent_spacing_in_year(year, owner_percent):
-                        print(f"Swapping shares in year {y_idx}:\n"
-                              f"  Week {w_give}: {caw} now owned by {aw2.share}\n"
-                              f"  Week {w_get}: {aw2} now owned by {s}\n")
+                        print(
+                            f"Swapping shares in year {y_idx}:\n"
+                            f"  Week {w_give}: {caw} now owned by {aw2.share}\n"
+                            f"  Week {w_get}: {aw2} now owned by {s}\n"
+                        )
 
                         # Record this swap so we don't undo it immediately
                         recent_swaps.add(swap_key)
@@ -232,6 +270,7 @@ def try_swap(schedule, s, w_give, w_get, owner_percent, recent_swaps):
                         year.weeks[w_give].share = original_share_give
                         year.weeks[w_get].share = original_share_get
     return False
+
 
 # Example usage:
 # schedule: list of HouseYear instances (20 years)
@@ -245,7 +284,6 @@ owner_percent = {
     "eddie": 10,
     "richard": 10,
     "frank_latimer": 10,
-    
     # 5% owners
     "joe": 5,
     "lane": 5,
@@ -256,15 +294,86 @@ owner_percent = {
     "jordan": 5,
     "becca": 5,
     "hugh": 5,
-    "will": 5
+    "will": 5,
 }
 
-if __name__ == "__main__":
-    import take2
-    import pprint
 
+def share_name_to_printable(share_name):
+    return share_name.replace("_", " ").title()
+
+
+def print_year(house_year):
+    print(f"Year {house_year.year}\n")
+    prev_kind = None
+    for week in house_year.weeks:
+        if week.kind != prev_kind:
+            print(f"{week.kind.title()}:")
+            prev_kind = week.kind
+        name = share_name_to_printable(week.share)
+        holiday = ""
+        if week.holiday:
+            holiday = f" ({week.holiday} {holiday_to_emoji(week.holiday)})"
+        print(
+            "\t{}-{} - {}{}".format(
+                week.start.strftime("%x"), week.end.strftime("%x"), name, holiday
+            )
+        )
+    print("\n\n")
+
+
+def verify_spacing(schedule):
+    """
+    Verify spacing requirements:
+    - 5% owners: at least 10 weeks between allocated weeks
+    - 10% owners: at least 8 weeks between allocated weeks
+    Returns True if spacing is valid, False if not.
+    """
+    all_valid = True
+
+    # Check each year separately
+    for year_idx, year in enumerate(schedule):
+        # Create a mapping of share -> list of week indices for this year
+        share_positions = {}
+        for week_idx, week in enumerate(year.weeks):
+            if week.share is not None:
+                if week.share not in share_positions:
+                    share_positions[week.share] = []
+                share_positions[week.share].append(week_idx)
+
+        for share, positions in share_positions.items():
+            if share == "everyone":
+                continue
+            # Determine minimum spacing based on ownership percentage
+            min_weeks = 8 if owner_percent[share] == 10 else 10
+
+            # Sort week positions
+            positions.sort()
+
+            # Check spacing between consecutive weeks
+            for i in range(len(positions) - 1):
+                week1 = positions[i]
+                week2 = positions[i + 1]
+
+                # Calculate weeks between positions
+                weeks_between = week2 - week1
+
+                if weeks_between < min_weeks:
+                    print(
+                        f"Invalid spacing found for {share} ({owner_percent[share]}% share) in year {year_idx + 2025}:"
+                    )
+                    print(f"  Week 1: Week {week1}")
+                    print(f"  Week 2: Week {week2}")
+                    print(
+                        f"  Only {weeks_between} weeks apart (minimum {min_weeks} required)"
+                    )
+                    print()
+                    all_valid = False
+
+    return all_valid
+
+
+def full_schedule():
     schedule = []
-
     for year in range(2025, 2045):
         house_year = take2.HouseYear(year, debug=False)
         house_year.compute_all()
@@ -273,13 +382,41 @@ if __name__ == "__main__":
     # pprint.pprint(schedule[0].weeks)
     # pprint.pprint(count_weeks_by_share(schedule))
 
-
     new_schedule = rebalance_global(schedule, owner_percent)
 
+    populate_week_ends(new_schedule)
     # pprint.pprint(count_weeks_by_share(new_schedule))
 
-    #pprint.pprint(new_schedule[0].weeks)
+    # pprint.pprint(new_schedule[0].weeks)
     take2.test_schedule_results(new_schedule)
 
-    import export_to_excel
-    export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced.xlsx", new_schedule)
+    # import export_to_excel
+    # export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced.xlsx", new_schedule)
+
+    # if not verify_spacing(new_schedule):
+    #     raise Exception("Spacing is not valid.")
+
+    return new_schedule
+
+
+def populate_week_ends(schedule):
+    """
+    add the date for the end of the week based on the date of the previous one
+    """
+    for year in schedule:
+        # adjust for the monday switch over
+        for week in year.weeks:
+            week.start = week.start + datetime.timedelta(days=1)
+
+        for index, week in enumerate(year.weeks):
+            if index == len(year.weeks) - 1:
+                week.end = week.start + datetime.timedelta(days=7)
+            else:
+                week.end = year.weeks[index + 1].start
+
+
+if __name__ == "__main__":
+    schedule = full_schedule()
+
+    print_year(schedule[0])
+    print_year(schedule[1])
