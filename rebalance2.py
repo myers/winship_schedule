@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import logging
+
 def count_weeks_by_share_global(schedule):
     """
     Count how many times each share has each week index over the entire schedule.
@@ -220,9 +222,9 @@ def try_swap(schedule, s, w_give, w_get, owner_percent, recent_swaps):
 
                     # Check spacing for 10% shares
                     if check_10_percent_spacing_in_year(year, owner_percent):
-                        print(f"Swapping shares in year {y_idx}:\n"
-                              f"  Week {w_give}: {caw} now owned by {aw2.share}\n"
-                              f"  Week {w_get}: {aw2} now owned by {s}\n")
+                        logging.debug(f"Swapping shares in year {y_idx}:\n"
+                                     f"  Week {w_give}: {caw} now owned by {aw2.share}\n"
+                                     f"  Week {w_get}: {aw2} now owned by {s}\n")
 
                         # Record this swap so we don't undo it immediately
                         recent_swaps.add(swap_key)
@@ -262,6 +264,9 @@ owner_percent = {
 if __name__ == "__main__":
     import take2
     import pprint
+    
+    # Set logging level to INFO to suppress debug messages
+    logging.basicConfig(level=logging.INFO)
 
     schedule = []
 
@@ -269,6 +274,7 @@ if __name__ == "__main__":
         house_year = take2.HouseYear(year, debug=False)
         house_year.compute_all()
         schedule.append(house_year)
+        
     assert len(schedule) == 20
     # pprint.pprint(schedule[0].weeks)
     # pprint.pprint(count_weeks_by_share(schedule))
@@ -280,7 +286,8 @@ if __name__ == "__main__":
 
     #pprint.pprint(new_schedule[0].weeks)
     take2.test_schedule_results(new_schedule)
-
-    pprint.pprint(new_schedule[0].weeks)
+    pprint.pprint(new_schedule)
+    print(len(new_schedule))
+    # pprint.pprint(new_schedule[0].weeks)
     import export_to_excel
     export_to_excel.export_to_excel("winship_schedule_2025_2045_balanced2.xlsx", new_schedule)

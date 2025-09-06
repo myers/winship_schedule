@@ -43,5 +43,5 @@ if __name__ == "__main__":
     if ret.failed > 0:
         sys.exit(1)
 
-    for year in range(2023, 2026):
+    for year in range(2026, 2027):
         print_year_schedule(year)
